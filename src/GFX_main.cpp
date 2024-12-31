@@ -1,9 +1,3 @@
-/**
- * @ Author: Afnan Fader
- * @ Create Time: 2024-12-31 04:09:07
- * @ Description: GFX Renderer Main Functions
- */
-
 
 #include <iostream>
 

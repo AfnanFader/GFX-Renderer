@@ -1,7 +1,7 @@
 # Xmake cache
 .xmake/
 build/
-deubg/
+debug/
 
 # MacOS Cache
 .DS_Store
