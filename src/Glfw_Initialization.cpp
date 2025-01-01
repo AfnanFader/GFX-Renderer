@@ -2,7 +2,7 @@
 #include <GLFW/glfw3.h>
 #include <Precomp.hpp>
 
-namespace window
+namespace Window
 {
 
 GlfwInitialization::GlfwInitialization()
@@ -14,6 +14,10 @@ GlfwInitialization::GlfwInitialization()
     }
 }
 
-GlfwInitialization::~GlfwInitialization() { glfwTerminate(); }
+GlfwInitialization::~GlfwInitialization() 
+{
+    std::cout << "[INFO] Terminate GLFW" << std::endl; 
+    glfwTerminate();
+}
 
-} // namespace window
+} // namespace Window

@@ -1,6 +1,6 @@
 #pragma once
 
-namespace window
+namespace Window
 {
 
 struct GlfwInitialization
@@ -13,4 +13,4 @@ struct GlfwInitialization
     GlfwInitialization& operator = (const GlfwInitialization&) = delete; 
 };
 
-} // namespace window
+} // namespace Window

@@ -3,11 +3,10 @@
 struct GLFWmonitor;
 struct GLFWwindow;
 
-namespace window
+namespace Window
 {
 
 GLFWmonitor** GetMonitor();
-
 void MoveWindowToMonitor(GLFWwindow* const windowPtr, GLFWmonitor** const monitorArrPtr);
 
-} // namespace window
+} // namespace Window

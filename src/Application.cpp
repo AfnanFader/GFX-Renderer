@@ -1,22 +1,16 @@
 #include <GLFW/glfw3.h>
-#include <Glfw_Monitor.hpp>
 #include <Glfw_Initialization.hpp>
+#include <Glfw_Window.hpp>
 #include <Precomp.hpp>
+#include <VK_Renderer.hpp>
 
 int32_t main(int argc, const char * argv[])
 {
-    window::GlfwInitialization const _glfw;
+    Window::GlfwInitialization const _glfw;
+    Window::WindowHandler window;
+    Renderer::VkGraphic vkRenderer(&window);
 
-    // TODO#2 Add null checking method
-    GLFWwindow* windowPtr = glfwCreateWindow(854, 480, "GFX-Renderer", nullptr, nullptr); // Starting with hardcoded 16:9
-    GLFWmonitor** monitoArrPtr = window::GetMonitor();
-
-    if (monitoArrPtr != nullptr)
-    {
-        window::MoveWindowToMonitor(windowPtr, monitoArrPtr);
-    }
-
-    while (!glfwWindowShouldClose(windowPtr))
+    while (!window.ShouldCloseWindow())
     {
         glfwPollEvents();
     }

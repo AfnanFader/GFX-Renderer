@@ -2,7 +2,7 @@
 #include <GLFW/glfw3.h>
 #include <Precomp.hpp>
 
-namespace window
+namespace Window
 {
 
 GLFWmonitor** GetMonitor()
@@ -28,4 +28,4 @@ void MoveWindowToMonitor(GLFWwindow* const windowPtr, GLFWmonitor** const monito
     glfwSetWindowPos(windowPtr, center_coordinates.x, center_coordinates.y);
 }
 
-} // namespace window
+} // namespace Window
