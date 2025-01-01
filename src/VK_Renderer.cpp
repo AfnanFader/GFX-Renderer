@@ -1,6 +1,7 @@
 #include <GLFW/glfw3.h>
 #include <Precomp.hpp>
 #include <VK_Renderer.hpp>
+#include <vector>
 
 namespace Renderer
 {
@@ -25,6 +26,9 @@ void VkGraphic::CreateInstance()
 {
 
     std::pair<char const **,uint32_t> suggested_extensions = GetSuggestedExtension();
+    std::vector<VkExtensionProperties> support_extensions = GetSupportedInstanceExtensions();
+
+    // KIV Checker to be added to null Extensions.
 
     VkApplicationInfo app_info = {};
     app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -57,6 +61,19 @@ std::pair<char const **,uint32_t> VkGraphic::GetSuggestedExtension()
     char const ** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwEntensionCount);
 
     return std::make_pair(glfwExtensions, glfwEntensionCount);
+}
+
+std::vector<VkExtensionProperties> VkGraphic::GetSupportedInstanceExtensions()
+{
+    uint32_t count;
+    vkEnumerateInstanceExtensionProperties(nullptr, &count, nullptr);
+
+    if (count == 0) { return {}; }
+
+    std::vector<VkExtensionProperties> properties(count);
+    vkEnumerateInstanceExtensionProperties(nullptr, &count, properties.data());
+
+    return properties;
 }
 
 } // namespace Renderer
