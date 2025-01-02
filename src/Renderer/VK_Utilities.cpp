@@ -1,6 +1,7 @@
 #include "vulkan/vulkan.h"
 #include "VK_Utilities.hpp"
 #include "Precomp.hpp"
+#include "spdlog/spdlog.h"
 
 namespace Renderer
 {
@@ -14,20 +15,18 @@ VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityFlagBits
     switch(messageSeverity)
     {
         case VERSBOSE:
-            std::cout << "[VERSBOSE-VK] " << pCallbackData->pMessage << std::endl;
-            break;
         case INFO:
-            std::cout << "[INFO-VK] " << pCallbackData->pMessage << std::endl;
+            spdlog::info("VK Validation: {}",pCallbackData->pMessage);
             break;
         case WARNING:
-            std::cerr << "[WARNING-VK] " << pCallbackData->pMessage << std::endl;
+            spdlog::warn("VK Validation: {}",pCallbackData->pMessage);
             break;
         case ERROR:
-            std::cerr << "[ERROR-VK] " << pCallbackData->pMessage << std::endl;
+            spdlog::critical("VK Validation: {}",pCallbackData->pMessage);
             break;
         default:
-            std::cerr << "[ERROR] Unknown Message Severity : "<< messageSeverity <<
-                         "\n        VulkanK Error Message : "<< pCallbackData->pMessage << std::endl;
+            spdlog::critical("UNKNOWN VK MESSAGE: {}",pCallbackData->pMessage);
+            std::exit(EXIT_FAILURE);
     }
 
     return VK_FALSE;
@@ -39,10 +38,10 @@ VkDebugUtilsMessengerCreateInfoEXT PopulateDebugMessengerCreateInfo()
     VkDebugUtilsMessengerCreateInfoEXT msgCreationInfo = {};
     msgCreationInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
     msgCreationInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | 
-                                        VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT |
-                                        VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT;
+                                      VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT |
+                                      VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT;
     msgCreationInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
-                                    VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT;
+                                  VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT;
     msgCreationInfo.pfnUserCallback = DebugCallback;
     msgCreationInfo.pUserData = nullptr;
 

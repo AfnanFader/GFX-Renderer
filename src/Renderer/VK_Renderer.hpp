@@ -22,7 +22,7 @@ class VkGraphic final
     // Extensions Properties checkers
     static std::vector<const char*> GetGLFWRequiredExtensions();
     static std::vector<VkExtensionProperties> GetSupportedInstanceExtensions();
-    bool CheckInstanceExtensionSupport(std::vector<const char*> requiredExtensions);
+    bool CheckSupportedExtensionProperties(std::vector<const char*> requiredExtensions);
 
     // Validation Layer checkers
     static std::vector<VkLayerProperties> GetSupportedValidationLayers();

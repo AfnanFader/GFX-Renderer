@@ -2,6 +2,7 @@
 #include "Glfw_Monitor.hpp"
 #include "Glfw_Window.hpp"
 #include "Common/Precomp.hpp"
+#include "spdlog/spdlog.h"
 
 namespace Window
 {
@@ -16,6 +17,7 @@ WindowHandler::WindowHandler()
 
     if (windowPtr_ == nullptr || monitoArrPtr_ == nullptr)
     {
+        spdlog::critical("WindowHandler: Initialization Failed");
         std::exit(EXIT_FAILURE);
     }
 
@@ -25,7 +27,7 @@ WindowHandler::WindowHandler()
 
 WindowHandler::~WindowHandler()
 {
-    std::cout << "[INFO] Terminate Window" << std::endl; 
+    spdlog::info("WindowHandler: Terminate WindowHandler");
     glfwDestroyWindow(windowPtr_);
 }
 

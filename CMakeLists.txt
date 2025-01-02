@@ -11,6 +11,7 @@ endif()
 
 # External Dependencies
 include(FetchContent)
+
 FetchContent_Declare(
     glm
     GIT_REPOSITORY "https://github.com/g-truc/glm.git"
@@ -25,8 +26,16 @@ FetchContent_Declare(
     GIT_SHALLOW TRUE
 )
 
+FetchContent_Declare(
+    spdlog
+    GIT_REPOSITORY "https://github.com/gabime/spdlog.git"
+    GIT_TAG "v1.15.0"
+    GIT_SHALLOW TRUE
+)
+
 FetchContent_MakeAvailable(glm)
 FetchContent_MakeAvailable(glfw)
+FetchContent_MakeAvailable(spdlog)
 
 # Vulkan Dependencies
 find_package(Vulkan REQUIRED)
@@ -53,3 +62,4 @@ target_link_libraries(${PROJECT_NAME} PRIVATE Renderer)
 target_link_libraries(${PROJECT_NAME} PRIVATE Vulkan::Vulkan)
 target_link_libraries(${PROJECT_NAME} PRIVATE glm)
 target_link_libraries(${PROJECT_NAME} PRIVATE glfw)
+target_link_libraries(${PROJECT_NAME} PRIVATE spdlog)

@@ -3,6 +3,7 @@
 #include "Precomp.hpp"
 #include "VK_Renderer.hpp"
 #include "VK_Utilities.hpp"
+#include "spdlog/spdlog.h"
 
 namespace Renderer
 {
@@ -15,7 +16,7 @@ VkGraphic::VkGraphic(Window::WindowHandler* windowPtr) : windowPtr_(windowPtr)
 
 VkGraphic::~VkGraphic()
 {
-    std::cout << "[INFO] Destroy VkInstance" << std::endl; 
+    spdlog::info("VK Instance: Terminate VkInstance");
     vkDestroyInstance(vkInstance_, nullptr);
 }
 
@@ -30,8 +31,9 @@ void VkGraphic::CreateInstance()
     std::vector<const char*> requiredExtensions = GetGLFWRequiredExtensions();
     std::vector<const char*> requiredLayers = {"VK_LAYER_KHRONOS_validation"};
 
-    if (!CheckInstanceExtensionSupport(requiredExtensions))
+    if (!CheckSupportedExtensionProperties(requiredExtensions))
     {
+        spdlog::critical("VK Instance: No supported Extension properties found");
         std::exit(EXIT_FAILURE);
     }
 
@@ -67,6 +69,7 @@ void VkGraphic::CreateInstance()
 
     if (result != VK_SUCCESS)
     {
+        spdlog::critical("VK Instance: Failed to initialize instance");
         std::exit(EXIT_FAILURE);
     }
 }
@@ -93,7 +96,7 @@ std::vector<VkExtensionProperties> VkGraphic::GetSupportedInstanceExtensions()
     return properties;
 }
 
-bool VkGraphic::CheckInstanceExtensionSupport(std::vector<const char*> requiredExtensions)
+bool VkGraphic::CheckSupportedExtensionProperties(std::vector<const char*> requiredExtensions)
 {
     std::vector<VkExtensionProperties> availableExtensions = GetSupportedInstanceExtensions();
 
@@ -105,8 +108,7 @@ bool VkGraphic::CheckInstanceExtensionSupport(std::vector<const char*> requiredE
         {
             if (strcmp(required, extension.extensionName) == 0)
             {
-
-                std::cout << "[INFO] Supported Extensions : " << extension.extensionName << std::endl;
+                spdlog::info("VK Instance: Supported Extensions -> {}",extension.extensionName);
                 found = true;
 
                 break;
@@ -114,7 +116,7 @@ bool VkGraphic::CheckInstanceExtensionSupport(std::vector<const char*> requiredE
         }
         if (!found)
         {
-            std::cerr << "Required extension not found: " << required << std::endl;
+            spdlog::error("VK Instance: Required extension not found");
             return false;
         }
     }
@@ -147,7 +149,7 @@ bool VkGraphic::CheckSupportedValidationLayers(std::vector<const char*> required
         {
             if (strcmp(required, layers.layerName) == 0)
             {
-                std::cout << "[INFO] Supported Validation Layers : " << layers.layerName << std::endl;
+                spdlog::info("VK Instance: Supported Validation Layers -> {}",layers.layerName);
                 found = true;
 
                 break;
@@ -155,7 +157,7 @@ bool VkGraphic::CheckSupportedValidationLayers(std::vector<const char*> required
         }
         if (!found)
         {
-            std::cerr << "Required Validation Layers not found: " << required << std::endl;
+            spdlog::error("VK Instance: Required Validation Layers not found");
             return false;
         }
     }

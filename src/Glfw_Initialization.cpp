@@ -1,6 +1,7 @@
 #include "Glfw_Initialization.hpp"
 #include "GLFW/glfw3.h"
 #include "Common/Precomp.hpp"
+#include "spdlog/spdlog.h"
 
 namespace Window
 {
@@ -9,14 +10,14 @@ GlfwInitialization::GlfwInitialization()
 {
     if (glfwInit() != GLFW_TRUE)
     {
-        //TODO#1 - Add wrapper for exit and logging.
+        spdlog::critical("GLFW: Initialization Failed !");
         std::exit(EXIT_FAILURE);
     }
 }
 
 GlfwInitialization::~GlfwInitialization() 
 {
-    std::cout << "[INFO] Terminate GLFW" << std::endl; 
+    spdlog::info("GLFW: Terminate GLFW");
     glfwTerminate();
 }
 
