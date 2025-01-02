@@ -1,7 +1,7 @@
-#include <GLFW/glfw3.h>
-#include <Glfw_Monitor.hpp>
-#include <Glfw_Window.hpp>
-#include <Precomp.hpp>
+#include "GLFW/glfw3.h"
+#include "Glfw_Monitor.hpp"
+#include "Glfw_Window.hpp"
+#include "Common/Precomp.hpp"
 
 namespace Window
 {

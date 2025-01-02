@@ -6,7 +6,7 @@ if exist %BUILD_DIR% (
 
     echo [INFO] Start Build ...
 
-    cmake --build %BUILD_DIR%
+    cmake --build %BUILD_DIR% --verbose
     if %ERRORLEVEL%==0 (
         echo [INFO] Build Passed!
     ) else (

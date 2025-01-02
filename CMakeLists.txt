@@ -30,22 +30,26 @@ FetchContent_MakeAvailable(glfw)
 
 # Vulkan Dependencies
 find_package(Vulkan REQUIRED)
-file(GLOB_RECURSE VulkanEngineSources CONFIGURE_DEPENDS
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.h"
-)
 
-# C++ Standard
+# Compiler settings
+set(CMAKE_BUILD_TYPE debug)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-# Build Config
-set(CMAKE_BUILD_TYPE debug)
+# Add subdirectories and other external libraries
+add_subdirectory("src/Renderer")
 
-# Build targets and libraries
-add_executable(${PROJECT_NAME} ${VulkanEngineSources})
+# Load all headers
+include_directories(${CMAKE_SOURCE_DIR}/src)
+
+# List out all the source files in /src
+file(GLOB_RECURSE MainSource CONFIGURE_DEPENDS "src/*.cpp")
+
+# Creating executable
+add_executable(${PROJECT_NAME} "${MainSource}")
+
+# Linking libraries
+target_link_libraries(${PROJECT_NAME} PRIVATE Renderer)
 target_link_libraries(${PROJECT_NAME} PRIVATE Vulkan::Vulkan)
 target_link_libraries(${PROJECT_NAME} PRIVATE glm)
 target_link_libraries(${PROJECT_NAME} PRIVATE glfw)
-target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
-target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_20)

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vulkan/vulkan.h>
+#include <vector>
 
 namespace Window { class WindowHandler; }
 
@@ -26,3 +27,5 @@ class VkGraphic final
 };
 
 } // namespace Renderer
+
+

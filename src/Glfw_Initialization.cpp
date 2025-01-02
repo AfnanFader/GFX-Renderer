@@ -1,6 +1,6 @@
-#include <Glfw_Initialization.hpp>
-#include <GLFW/glfw3.h>
-#include <Precomp.hpp>
+#include "Glfw_Initialization.hpp"
+#include "GLFW/glfw3.h"
+#include "Common/Precomp.hpp"
 
 namespace Window
 {
