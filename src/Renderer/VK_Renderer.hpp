@@ -46,7 +46,7 @@ class VkGraphic final
     // Physical Device handlers
     std::vector<VkPhysicalDevice> GetAvailableDevices();
     bool IsPhysicalDeviceCompatible(VkPhysicalDevice device);
-    QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device);
+    // QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device); <-- To be evalutated
 
     // Object Instances
     VkInstance vkInstance_ = nullptr; // Vulkan Instance

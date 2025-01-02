@@ -12,7 +12,7 @@ VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityFlagBits
                                              const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
                                              void* pUserData)
 {
-    switch(messageSeverity)
+    switch(static_cast<VkDebugMessageSeverity>(messageSeverity))
     {
         case VERSBOSE:
         case INFO:

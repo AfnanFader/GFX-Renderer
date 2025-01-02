@@ -77,6 +77,12 @@ void VkGraphic::CreateInstance()
     std::vector<const char*> requiredExtensions = GetGLFWRequiredExtensions();
     std::vector<const char*> requiredLayers = {"VK_LAYER_KHRONOS_validation"};
 
+    #ifdef __APPLE__
+    // MAC specific extensions
+    requiredExtensions.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
+    spdlog::warn("VK Instance: Vulkan Portability Enumeration Extension Added");
+    #endif
+
     if (!CheckSupportedExtensionProperties(requiredExtensions))
     {
         spdlog::critical("VK Instance: No supported Extension properties found");
@@ -111,6 +117,11 @@ void VkGraphic::CreateInstance()
     instanceCreationInfo.enabledExtensionCount = static_cast<uint32_t>(requiredExtensions.size());
     instanceCreationInfo.ppEnabledLayerNames = debuggingEnabled_ ? requiredLayers.data() : nullptr;
     instanceCreationInfo.enabledLayerCount = debuggingEnabled_ ? static_cast<uint32_t>(requiredLayers.size()) : 0;
+    #ifdef __APPLE__
+    // This flag is require for MoltenVK
+    instanceCreationInfo.flags = VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
+    spdlog::warn("VK Instance: Enumerate Portability Bit for MoltenVK");
+    #endif
 
     VkResult result = vkCreateInstance(&instanceCreationInfo, nullptr, &vkInstance_);
 
@@ -230,7 +241,15 @@ bool VkGraphic::CheckSupportedValidationLayers(std::vector<const char*> required
 void VkGraphic::PickPhysicalDevice()
 {
     std::vector<VkPhysicalDevice> availPhysicalDevices = GetAvailableDevices();
-    std::erase_if(availPhysicalDevices, std::not_fn(std::bind_front(&VkGraphic::IsPhysicalDeviceCompatible, this)));
+
+    // Filter out non compatible devices.
+    for (uint32_t index = 0; index < availPhysicalDevices.size(); ++index)
+    {
+        if (!IsPhysicalDeviceCompatible(availPhysicalDevices[index]))
+        {
+            availPhysicalDevices.erase(availPhysicalDevices.begin() + index);
+        }
+    }
 
     if (availPhysicalDevices.empty())
     {
@@ -238,22 +257,33 @@ void VkGraphic::PickPhysicalDevice()
         std::exit(EXIT_FAILURE);
     }
 
+    // Future logic for choosing with GPU
+
     physicalDevice_ = availPhysicalDevices[0];
 }
 
 bool VkGraphic::IsPhysicalDeviceCompatible(VkPhysicalDevice device)
 {
+    bool deviceSupported = false;
     VkPhysicalDeviceProperties deviceProperties = {};
     vkGetPhysicalDeviceProperties(device, &deviceProperties);
 
-    QueueFamilyIndices qFamily = FindQueueFamilies(device);
+    uint32_t queueFamilyCount = 0;
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
+    std::vector<VkQueueFamilyProperties> familiesProperties(queueFamilyCount);
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, familiesProperties.data());
 
-    if (qFamily.isValid())
+    for (uint32_t i = 0; i < queueFamilyCount; ++i)
     {
-        spdlog::info("VK Instance: Available Physical Device -> {}", deviceProperties.deviceName);
+        if (familiesProperties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)
+        {
+            deviceSupported = true;
+            spdlog::info("VK Instance: Compatible Physical Device -> {}", deviceProperties.deviceName);
+            break;
+        }
     }
 
-    return qFamily.isValid();
+    return deviceSupported;
 }
 
 std::vector<VkPhysicalDevice> VkGraphic::GetAvailableDevices()
@@ -267,25 +297,6 @@ std::vector<VkPhysicalDevice> VkGraphic::GetAvailableDevices()
     vkEnumeratePhysicalDevices(vkInstance_, &phyDevCount, availPhysicalDevices.data());
 
     return availPhysicalDevices;
-}
-
-QueueFamilyIndices VkGraphic::FindQueueFamilies(VkPhysicalDevice device)
-{
-    uint32_t queueFamilyCount = 0;
-    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
-    std::vector<VkQueueFamilyProperties> familiesProperties(queueFamilyCount);
-    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, familiesProperties.data());
-
-    auto graphicsFamily = 
-        std::find_if(familiesProperties.begin(), familiesProperties.end(), [](const VkQueueFamilyProperties& props)
-    {
-        return props.queueFlags & (VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_TRANSFER_BIT);
-    });
-
-    QueueFamilyIndices result;
-    result.graphicFamily = graphicsFamily - familiesProperties.begin();
-
-    return result;
 }
 
 } // namespace Renderer
