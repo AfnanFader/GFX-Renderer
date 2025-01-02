@@ -1,6 +1,6 @@
 #pragma once
 
-#include <vulkan/vulkan.h>
+#include "vulkan/vulkan.h"
 #include <vector>
 
 namespace Window { class WindowHandler; }
@@ -18,13 +18,19 @@ class VkGraphic final
 
     void InitializeVulkan();
     void CreateInstance();
+
+    // Extensions Properties checkers
     static std::vector<const char*> GetGLFWRequiredExtensions();
     static std::vector<VkExtensionProperties> GetSupportedInstanceExtensions();
-    static bool CheckInstanceExtensionSupport(std::vector<const char*> requiredExtensions);
+    bool CheckInstanceExtensionSupport(std::vector<const char*> requiredExtensions);
 
-    // Object data members.
-    VkInstance vkInstance_ = nullptr;
-    Window::WindowHandler* windowPtr_;
+    // Validation Layer checkers
+    static std::vector<VkLayerProperties> GetSupportedValidationLayers();
+    bool CheckSupportedValidationLayers(std::vector<const char*> requiredLayers);
+
+    VkInstance vkInstance_ = nullptr; // Vulkan Instance
+    Window::WindowHandler* windowPtr_; // Pointer to the instantiated GLFW Window
+    bool debuggingEnabled_ = false; // Vulkan Validation Layer
 };
 
 } // namespace Renderer
