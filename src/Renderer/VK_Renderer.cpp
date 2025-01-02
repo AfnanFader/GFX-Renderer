@@ -52,7 +52,7 @@ VkGraphic::~VkGraphic()
 {
     if (vkInstance_ != nullptr)
     {
-        if (debugMessenger_ != nullptr)
+        if ((debugMessenger_ != nullptr) || debuggingEnabled_)
         {
             spdlog::info("VK Instance: Terminate DebugMessenger");
             vkDestroyDebugUtilsMessengerEXT(vkInstance_, debugMessenger_, nullptr);
@@ -67,7 +67,8 @@ VkGraphic::~VkGraphic()
 void VkGraphic::InitializeVulkan()
 {
     CreateInstance();
-    SetupDebugMessenger();
+    SetupDebugMessenger(); // Note that this is optional for now
+    PickPhysicalDevice();
 }
 
 void VkGraphic::CreateInstance()
@@ -224,6 +225,67 @@ bool VkGraphic::CheckSupportedValidationLayers(std::vector<const char*> required
     }
 
     return true;
+}
+
+void VkGraphic::PickPhysicalDevice()
+{
+    std::vector<VkPhysicalDevice> availPhysicalDevices = GetAvailableDevices();
+    std::erase_if(availPhysicalDevices, std::not_fn(std::bind_front(&VkGraphic::IsPhysicalDeviceCompatible, this)));
+
+    if (availPhysicalDevices.empty())
+    {
+        spdlog::critical("VK Instance: No available GPU to be binded.");
+        std::exit(EXIT_FAILURE);
+    }
+
+    physicalDevice_ = availPhysicalDevices[0];
+}
+
+bool VkGraphic::IsPhysicalDeviceCompatible(VkPhysicalDevice device)
+{
+    VkPhysicalDeviceProperties deviceProperties = {};
+    vkGetPhysicalDeviceProperties(device, &deviceProperties);
+
+    QueueFamilyIndices qFamily = FindQueueFamilies(device);
+
+    if (qFamily.isValid())
+    {
+        spdlog::info("VK Instance: Available Physical Device -> {}", deviceProperties.deviceName);
+    }
+
+    return qFamily.isValid();
+}
+
+std::vector<VkPhysicalDevice> VkGraphic::GetAvailableDevices()
+{
+    uint32_t phyDevCount = 0;
+    vkEnumeratePhysicalDevices(vkInstance_, &phyDevCount, nullptr);
+
+    if (phyDevCount == 0) { return {}; }; 
+
+    std::vector<VkPhysicalDevice> availPhysicalDevices(phyDevCount);
+    vkEnumeratePhysicalDevices(vkInstance_, &phyDevCount, availPhysicalDevices.data());
+
+    return availPhysicalDevices;
+}
+
+QueueFamilyIndices VkGraphic::FindQueueFamilies(VkPhysicalDevice device)
+{
+    uint32_t queueFamilyCount = 0;
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
+    std::vector<VkQueueFamilyProperties> familiesProperties(queueFamilyCount);
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, familiesProperties.data());
+
+    auto graphicsFamily = 
+        std::find_if(familiesProperties.begin(), familiesProperties.end(), [](const VkQueueFamilyProperties& props)
+    {
+        return props.queueFlags & (VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_TRANSFER_BIT);
+    });
+
+    QueueFamilyIndices result;
+    result.graphicFamily = graphicsFamily - familiesProperties.begin();
+
+    return result;
 }
 
 } // namespace Renderer
