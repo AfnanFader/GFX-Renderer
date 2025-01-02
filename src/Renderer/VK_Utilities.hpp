@@ -13,6 +13,6 @@ typedef enum VkDebugMessageSeverity {
     MAX = 0x7FFFFFFF
 } VkDebugMessageSeverity;
 
-VkDebugUtilsMessengerCreateInfoEXT PopulateDebugMessengerCreateInfo();
+VkDebugUtilsMessengerCreateInfoEXT GetDebugMessengerCreateInfo();
 
 } // namespace Renderer

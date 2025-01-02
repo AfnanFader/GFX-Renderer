@@ -33,7 +33,7 @@ VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityFlagBits
 }
 
 // Types of Validation/Debug messages to be subscribed.
-VkDebugUtilsMessengerCreateInfoEXT PopulateDebugMessengerCreateInfo()
+VkDebugUtilsMessengerCreateInfoEXT GetDebugMessengerCreateInfo()
 {
     VkDebugUtilsMessengerCreateInfoEXT msgCreationInfo = {};
     msgCreationInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;

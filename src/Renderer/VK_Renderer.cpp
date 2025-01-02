@@ -5,6 +5,40 @@
 #include "VK_Utilities.hpp"
 #include "spdlog/spdlog.h"
 
+
+VKAPI_ATTR VkResult VKAPI_CALL vkCreateDebugUtilsMessengerEXT(
+    VkInstance instance,
+    const VkDebugUtilsMessengerCreateInfoEXT* pInfo,
+    const VkAllocationCallbacks* pAllocator,
+    VkDebugUtilsMessengerEXT* debugMessenger)
+{
+    PFN_vkCreateDebugUtilsMessengerEXT func =
+    reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT"));
+
+    if (func != nullptr)
+    {
+        return func(instance, pInfo, pAllocator, debugMessenger);
+    }
+    else
+    {
+        return VK_ERROR_EXTENSION_NOT_PRESENT;
+    }
+}
+
+VKAPI_ATTR void VKAPI_CALL vkDestroyDebugUtilsMessengerEXT(
+    VkInstance instance,
+    VkDebugUtilsMessengerEXT debugMessenger,
+    const VkAllocationCallbacks* pAllocator)
+{
+    PFN_vkDestroyDebugUtilsMessengerEXT func =
+    reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT"));
+
+    if (func != nullptr)
+    {
+        return func(instance, debugMessenger, pAllocator);
+    }
+}
+
 namespace Renderer
 {
 
@@ -16,18 +50,29 @@ VkGraphic::VkGraphic(Window::WindowHandler* windowPtr) : windowPtr_(windowPtr)
 
 VkGraphic::~VkGraphic()
 {
-    spdlog::info("VK Instance: Terminate VkInstance");
-    vkDestroyInstance(vkInstance_, nullptr);
+    if (vkInstance_ != nullptr)
+    {
+        if (debugMessenger_ != nullptr)
+        {
+            spdlog::info("VK Instance: Terminate DebugMessenger");
+            vkDestroyDebugUtilsMessengerEXT(vkInstance_, debugMessenger_, nullptr);
+        }
+
+        spdlog::info("VK Instance: Terminate VkInstance");
+        vkDestroyInstance(vkInstance_, nullptr);
+    }
+
 }
 
 void VkGraphic::InitializeVulkan()
 {
     CreateInstance();
+    SetupDebugMessenger();
 }
 
 void VkGraphic::CreateInstance()
 {
-    VkDebugUtilsMessengerCreateInfoEXT msgCreationInfo = PopulateDebugMessengerCreateInfo();
+    VkDebugUtilsMessengerCreateInfoEXT msgCreationInfo = GetDebugMessengerCreateInfo();
     std::vector<const char*> requiredExtensions = GetGLFWRequiredExtensions();
     std::vector<const char*> requiredLayers = {"VK_LAYER_KHRONOS_validation"};
 
@@ -45,6 +90,7 @@ void VkGraphic::CreateInstance()
     {
         // Only append this if Vulkan validation layer is supported.
         requiredExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+        spdlog::warn("VK Instance: Vulkan Validation/Debugging mode enabled");
     }
 
     VkApplicationInfo appInfo = {};
@@ -74,7 +120,22 @@ void VkGraphic::CreateInstance()
     }
 }
 
-std::vector<const char*> VkGraphic::GetGLFWRequiredExtensions() {
+void VkGraphic::SetupDebugMessenger()
+{
+    if (!debuggingEnabled_) { return; }
+
+    VkDebugUtilsMessengerCreateInfoEXT msgCreationInfo = GetDebugMessengerCreateInfo();
+    VkResult result = vkCreateDebugUtilsMessengerEXT(vkInstance_, &msgCreationInfo, nullptr, &debugMessenger_);
+
+    if (result != VK_SUCCESS)
+    {
+        spdlog::error("VK Instance: Debug Messenger setup failed ..");
+        return;
+    }
+}
+
+std::vector<const char*> VkGraphic::GetGLFWRequiredExtensions()
+{
     uint32_t glfwExtensionCount = 0;
     const char** glfwExtensions;
 

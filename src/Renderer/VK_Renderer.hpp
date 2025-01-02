@@ -18,6 +18,7 @@ class VkGraphic final
 
     void InitializeVulkan();
     void CreateInstance();
+    void SetupDebugMessenger();
 
     // Extensions Properties checkers
     static std::vector<const char*> GetGLFWRequiredExtensions();
@@ -28,9 +29,13 @@ class VkGraphic final
     static std::vector<VkLayerProperties> GetSupportedValidationLayers();
     bool CheckSupportedValidationLayers(std::vector<const char*> requiredLayers);
 
+    // Object Instances
     VkInstance vkInstance_ = nullptr; // Vulkan Instance
     Window::WindowHandler* windowPtr_; // Pointer to the instantiated GLFW Window
+
+    // Debugging Instances
     bool debuggingEnabled_ = false; // Vulkan Validation Layer
+    VkDebugUtilsMessengerEXT debugMessenger_; // Vulkan debug messenger
 };
 
 } // namespace Renderer

@@ -6,8 +6,16 @@
 namespace Window
 {
 
+// Callback method for error messages from GLFW
+static void GlfwErrorCallback(int32_t errorCode, const char* message)
+{
+    spdlog::error("GLFW: {}", message);
+}
+
 GlfwInitialization::GlfwInitialization()
 {
+    glfwSetErrorCallback(GlfwErrorCallback);
+
     if (glfwInit() != GLFW_TRUE)
     {
         spdlog::critical("GLFW: Initialization Failed !");
