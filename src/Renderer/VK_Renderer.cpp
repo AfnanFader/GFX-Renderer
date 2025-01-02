@@ -1,3 +1,4 @@
+#include <algorithm>
 #include "GLFW/glfw3.h"
 #include "Precomp.hpp"
 #include "VK_Renderer.hpp"
@@ -23,11 +24,12 @@ void VkGraphic::InitializeVulkan()
 
 void VkGraphic::CreateInstance()
 {
+    std::vector<const char*> requiredExtensions = GetGLFWRequiredExtensions();
 
-    std::pair<char const **,uint32_t> suggested_extensions = GetSuggestedExtension();
-    std::vector<VkExtensionProperties> support_extensions = GetSupportedInstanceExtensions();
-
-    // KIV Checker to be added to null Extensions.
+    if (!CheckInstanceExtensionSupport(requiredExtensions))
+    {
+        std::exit(EXIT_FAILURE);
+    }
 
     VkApplicationInfo app_info = {};
     app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -42,8 +44,8 @@ void VkGraphic::CreateInstance()
     instance_creation_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     instance_creation_info.pNext = nullptr;
     instance_creation_info.pApplicationInfo = &app_info;
-    instance_creation_info.enabledExtensionCount = suggested_extensions.second;
-    instance_creation_info.ppEnabledExtensionNames = suggested_extensions.first;
+    instance_creation_info.enabledExtensionCount = static_cast<uint32_t>(requiredExtensions.size());
+    instance_creation_info.ppEnabledExtensionNames = requiredExtensions.data();
     instance_creation_info.enabledLayerCount = 0;
 
     VkResult result = vkCreateInstance(&instance_creation_info, nullptr, &vkInstance_);
@@ -54,25 +56,52 @@ void VkGraphic::CreateInstance()
     }
 }
 
-std::pair<char const **,uint32_t> VkGraphic::GetSuggestedExtension()
-{
-    uint32_t glfwEntensionCount = 0;
-    char const ** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwEntensionCount);
+std::vector<const char*> VkGraphic::GetGLFWRequiredExtensions() {
+    uint32_t glfwExtensionCount = 0;
+    const char** glfwExtensions;
 
-    return std::make_pair(glfwExtensions, glfwEntensionCount);
+    glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+
+    return std::vector<const char*>(glfwExtensions, glfwExtensions + glfwExtensionCount);
 }
 
 std::vector<VkExtensionProperties> VkGraphic::GetSupportedInstanceExtensions()
 {
-    uint32_t count;
-    vkEnumerateInstanceExtensionProperties(nullptr, &count, nullptr);
+    uint32_t extensionCount = 0;
+    vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
 
-    if (count == 0) { return {}; }
+    if (extensionCount == 0) { return {}; }
 
-    std::vector<VkExtensionProperties> properties(count);
-    vkEnumerateInstanceExtensionProperties(nullptr, &count, properties.data());
+    std::vector<VkExtensionProperties> properties(extensionCount);
+    vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, properties.data());
 
     return properties;
+}
+
+
+bool VkGraphic::CheckInstanceExtensionSupport(std::vector<const char*> requiredExtensions)
+{
+    std::vector<VkExtensionProperties> availableExtensions = GetSupportedInstanceExtensions();
+
+    // Check if all required extensions are available
+    for (const char* required : requiredExtensions) {
+        bool found = false;
+        for (const auto& extension : availableExtensions) {
+            if (strcmp(required, extension.extensionName) == 0) {
+
+                std::cout << "[INFO] Supported Extensions : " << extension.extensionName << std::endl;
+                found = true;
+
+                break;
+            }
+        }
+        if (!found) {
+            std::cerr << "Required extension not found: " << required << std::endl;
+            return false;
+        }
+    }
+
+    return true;
 }
 
 } // namespace Renderer

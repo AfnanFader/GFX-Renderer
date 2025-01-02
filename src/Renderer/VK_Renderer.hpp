@@ -18,8 +18,9 @@ class VkGraphic final
 
     void InitializeVulkan();
     void CreateInstance();
-    static std::pair<char const **, uint32_t> GetSuggestedExtension();
+    static std::vector<const char*> GetGLFWRequiredExtensions();
     static std::vector<VkExtensionProperties> GetSupportedInstanceExtensions();
+    static bool CheckInstanceExtensionSupport(std::vector<const char*> requiredExtensions);
 
     // Object data members.
     VkInstance vkInstance_ = nullptr;

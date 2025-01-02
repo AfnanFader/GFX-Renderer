@@ -15,7 +15,6 @@ class WindowHandler
 
     bool ShouldCloseWindow() const;
     GLFWwindow* GetWindowHandlerPointer() const;
-    void MoveMonitorToCenter();
 
     private:
     GLFWwindow* windowPtr_;
