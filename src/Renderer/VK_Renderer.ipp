@@ -12,5 +12,13 @@ inline std::vector<VkQueueFamilyProperties> VkGraphic::GetDeviceQueueFamilyPrope
 
     return familiesProperties;
 }
-    
+
+inline VkPhysicalDeviceProperties VkGraphic::GetPhysicalDeviceProperties(VkPhysicalDevice device)
+{
+    VkPhysicalDeviceProperties deviceProperties = {};
+    vkGetPhysicalDeviceProperties(device, &deviceProperties);
+
+    return deviceProperties;
+}
+
 } // namespace Renderer

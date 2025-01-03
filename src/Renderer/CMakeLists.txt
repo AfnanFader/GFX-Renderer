@@ -8,7 +8,7 @@ file(GLOB_RECURSE RendererSource CONFIGURE_DEPENDS
 
 add_library(${PROJECT_NAME} STATIC ${RendererSource})
 
-target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/src/Common)
+target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/src/Common ${CMAKE_SOURCE_DIR}/src)
 target_link_libraries(${PROJECT_NAME} PRIVATE Vulkan::Vulkan)
 target_link_libraries(${PROJECT_NAME} PRIVATE glfw)
 target_link_libraries(${PROJECT_NAME} PRIVATE spdlog)
