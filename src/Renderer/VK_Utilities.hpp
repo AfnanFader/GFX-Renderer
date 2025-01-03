@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 struct VkDebugUtilsMessengerCreateInfoEXT;
 
 namespace Renderer
@@ -14,5 +16,7 @@ typedef enum VkDebugMessageSeverity {
 } VkDebugMessageSeverity;
 
 VkDebugUtilsMessengerCreateInfoEXT GetDebugMessengerCreateInfo();
+
+std::vector<const char*> GetGLFWRequiredExtensions();
 
 } // namespace Renderer

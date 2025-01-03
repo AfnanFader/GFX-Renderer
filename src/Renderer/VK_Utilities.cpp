@@ -1,3 +1,4 @@
+#include "GLFW/glfw3.h"
 #include "vulkan/vulkan.h"
 #include "VK_Utilities.hpp"
 #include "Precomp.hpp"
@@ -46,6 +47,16 @@ VkDebugUtilsMessengerCreateInfoEXT GetDebugMessengerCreateInfo()
     msgCreationInfo.pUserData = nullptr;
 
     return msgCreationInfo;
+}
+
+std::vector<const char*> GetGLFWRequiredExtensions()
+{
+    uint32_t glfwExtensionCount = 0;
+    const char** glfwExtensions;
+
+    glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+
+    return std::vector<const char*>(glfwExtensions, glfwExtensions + glfwExtensionCount);
 }
 
 

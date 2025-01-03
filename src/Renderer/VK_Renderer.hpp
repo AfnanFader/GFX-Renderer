@@ -1,24 +1,26 @@
 #pragma once
 
+#define GLFW_INCLUDE_VULKAN
+#include "GLFW/glfw3.h"
 #include "vulkan/vulkan.h"
-#include <vector>
-#include <array>
+#include "vulkan/vulkan_beta.h"
 
 namespace Window { class WindowHandler; }
+
+#ifndef VK_RENDERER_HPP // include guard
+#define VK_RENDERER_HPP
+
+// Mac workaroud
+#ifndef VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES2_EXTENSION_NAME 
+#define VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES2_EXTENSION_NAME "VK_KHR_get_physical_device_properties2" 
+#endif
 
 namespace Renderer
 {
 
-// Required Vulkan Entensions.
-const std::array<const char*,1> requiredDeviceExtension = {
-    VK_KHR_SWAPCHAIN_EXTENSION_NAME
-    // Add when needed
-};
-
 // Struct to store QueueFamilyIndices for each Physical Devices/GPU
 struct QueueFamilyIndices
 {
-    std::string deviceName;
     std::optional<uint32_t> graphicFamilyIdx;
     std::optional<uint32_t> presentFamilyIdx;
 
@@ -63,8 +65,7 @@ class VkGraphic final
     // void CreateSwapChain(); // Handles the frame queue to be on screen.
 
     // Extensions Properties handlers
-    static std::vector<const char*> GetGLFWRequiredExtensions();
-    static std::vector<VkExtensionProperties> GetSupportedInstanceExtensions();
+    std::vector<VkExtensionProperties> GetSupportedInstanceExtensions();
     bool CheckSupportedExtensionProperties(std::vector<const char*> requiredExtensions);
 
     // Validation Layer handlers
@@ -73,11 +74,9 @@ class VkGraphic final
 
     // Physical Device handlers
     std::vector<VkPhysicalDevice> GetAvailableDevices();
-    void PopulateFamilyIndices();
     bool IsPhysicalDeviceCompatible(VkPhysicalDevice device);
-    bool CheckQueueFamilyProperties(VkPhysicalDevice device);
+    QueueFamilyIndices GetQueueFamilyProperties(VkPhysicalDevice device);
     std::vector<VkQueueFamilyProperties> GetDeviceQueueFamilyProperties(VkPhysicalDevice device);
-    VkPhysicalDeviceProperties GetPhysicalDeviceProperties(VkPhysicalDevice device);
     SwapChainProperties GetSwapChainProperties(VkPhysicalDevice device);
 
     // Logical Device handlers
@@ -90,8 +89,6 @@ class VkGraphic final
     Window::WindowHandler* windowPtr_; // Pointer to the instantiated GLFW Window
 
     VkPhysicalDevice physicalDevice_ = nullptr; // GPU Instance
-    QueueFamilyIndices familyIndices_ = {}; // Struct containing indexes for GPU Queues
-
     VkDevice logicalDevice_ = nullptr; // Logical GPU Binding
     VkQueue graphicQueue_ = nullptr; // Graphic Queue
     VkQueue presentQueue_ = nullptr; // KHR Presentation Qeueue
@@ -105,4 +102,4 @@ class VkGraphic final
 
 } // namespace Renderer
 
-
+#endif // VK_RENDERER_HPP

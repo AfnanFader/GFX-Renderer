@@ -1,5 +1,3 @@
-#define GLFW_INCLUDE_VULKAN
-#include "GLFW/glfw3.h"
 #include "Precomp.hpp"
 #include "VK_Renderer.ipp"
 #include "VK_Utilities.hpp"
@@ -40,6 +38,15 @@ VKAPI_ATTR void VKAPI_CALL vkDestroyDebugUtilsMessengerEXT(
         return func(instance, debugMessenger, pAllocator);
     }
 }
+
+// Required Vulkan Entensions.
+static std::vector<const char*> requiredDevExt = {
+#ifdef __APPLE__
+    VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME,
+    VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES2_EXTENSION_NAME,
+#endif
+    VK_KHR_SWAPCHAIN_EXTENSION_NAME
+};
 
 namespace Renderer
 {
@@ -83,7 +90,7 @@ void VkGraphic::InitializeVulkan()
     SetupDebugMessenger(); // Note that this is optional for now
     CreateSurface();
     PickPhysicalDevice();
-    CreateLogicalDeviceAndQueue();
+    // CreateLogicalDeviceAndQueue();
     // CreateSwapChain();
 }
 
@@ -161,16 +168,6 @@ void VkGraphic::SetupDebugMessenger()
         spdlog::error("VK Instance: Debug Messenger setup failed ..");
         return;
     }
-}
-
-std::vector<const char*> VkGraphic::GetGLFWRequiredExtensions()
-{
-    uint32_t glfwExtensionCount = 0;
-    const char** glfwExtensions;
-
-    glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-
-    return std::vector<const char*>(glfwExtensions, glfwExtensions + glfwExtensionCount);
 }
 
 std::vector<VkExtensionProperties> VkGraphic::GetSupportedInstanceExtensions()
@@ -277,47 +274,13 @@ void VkGraphic::PickPhysicalDevice()
     // Future logic for choosing with GPU
 
     physicalDevice_ = availPhysicalDevices[0];
-    PopulateFamilyIndices(); // <------------- REFACTOR
 }
 
 bool VkGraphic::IsPhysicalDeviceCompatible(VkPhysicalDevice device)
 {
-    return CheckQueueFamilyProperties(device) &&
-           AreAllDeviceExtensionSupported(device) &&
-           GetSwapChainProperties(device).IsValid();
-}
-
-void VkGraphic::PopulateFamilyIndices()
-{
-    VkPhysicalDeviceProperties deviceProperties = GetPhysicalDeviceProperties(physicalDevice_);
-    std::vector<VkQueueFamilyProperties> familiesProperties = GetDeviceQueueFamilyProperties(physicalDevice_);
-    
-    familyIndices_.deviceName = deviceProperties.deviceName;
-
-    for (uint32_t i = 0; i < familiesProperties.size(); ++i)
-    {
-        VkBool32 presentationSupport = false;
-        vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice_, i ,surfaceKHR_, &presentationSupport);
-
-        if (familiesProperties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)
-        {
-            spdlog::info("VK Instance: graphicFamilyIdx -> {}",i);
-            familyIndices_.graphicFamilyIdx = i;
-        }
-
-        if (presentationSupport)
-        {
-            spdlog::info("VK Instance: PresentFamilyIdx -> {}",i);
-            familyIndices_.presentFamilyIdx = i;
-        }
-
-        if (familyIndices_.IsComplete())
-        {
-            break;
-        }
-    }
-
-    spdlog::info("VK Instance: Acquired Physical Device -> {}", deviceProperties.deviceName);
+    return (GetQueueFamilyProperties(device).IsComplete() &&
+            AreAllDeviceExtensionSupported(device) &&
+            GetSwapChainProperties(device).IsValid());
 }
 
 std::vector<VkExtensionProperties> VkGraphic::GetSupportedDeviceExtesions(VkPhysicalDevice device)
@@ -335,52 +298,53 @@ bool VkGraphic::AreAllDeviceExtensionSupported(VkPhysicalDevice device)
 {
     std::vector<VkExtensionProperties> availableExtensions = GetSupportedDeviceExtesions(device);
 
-    std::set<std::string> requiredExtensionsSet(requiredDeviceExtension.begin(), requiredDeviceExtension.end());
+    std::set<std::string> requiredExtensionsSet(requiredDevExt.begin(), requiredDevExt.end());
     
     for (const auto& extension : availableExtensions)
     {
         requiredExtensionsSet.erase(extension.extensionName);
-    } 
+    }
+
+    if (requiredExtensionsSet.empty())
+    {
+        spdlog::warn("VK Instance: Requested Device Extensions are not supported");
+    }
     
-    return requiredExtensionsSet.empty();
+    return !requiredExtensionsSet.empty();
 }
 
-// This can be refactored to create a vector of comptible devices contating the QueueuFamilyIndices Struct.
-bool VkGraphic::CheckQueueFamilyProperties(VkPhysicalDevice device)
+QueueFamilyIndices VkGraphic::GetQueueFamilyProperties(VkPhysicalDevice device)
 {
     bool deviceSupported = false;
     VkBool32 presentationSupport = false;
-    VkPhysicalDeviceProperties deviceProperties = GetPhysicalDeviceProperties(device);
 
     std::vector<VkQueueFamilyProperties> familiesProperties = GetDeviceQueueFamilyProperties(device);
 
-    // Check for graphic capabilities
+    QueueFamilyIndices queueFamilyIndices = {};
     for (uint32_t i = 0; i < familiesProperties.size(); ++i)
     {
+        VkBool32 presentationSupport = false;
+        vkGetPhysicalDeviceSurfaceSupportKHR(device, i ,surfaceKHR_, &presentationSupport);
+
         if (familiesProperties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)
         {
-            deviceSupported = true;
-            break;
+            queueFamilyIndices.graphicFamilyIdx = i;
+            spdlog::info("VK Instance: graphicFamilyIdx -> {}",i);
         }
-    }
-
-    // Check for presentation support
-    for (uint32_t i = 0; i < familiesProperties.size(); ++i)
-    {
-        vkGetPhysicalDeviceSurfaceSupportKHR(device, i ,surfaceKHR_, &presentationSupport);
 
         if (presentationSupport)
         {
+            queueFamilyIndices.presentFamilyIdx = i;
+            spdlog::info("VK Instance: PresentFamilyIdx -> {}",i);
+        }
+
+        if (queueFamilyIndices.IsComplete())
+        {
             break;
         }
     }
 
-    if (deviceSupported && presentationSupport)
-    {
-        spdlog::info("VK Instance: Compatible Physical Device -> {}", deviceProperties.deviceName);
-    }
-
-    return (deviceSupported && presentationSupport);
+    return queueFamilyIndices;
 }
 
 std::vector<VkPhysicalDevice> VkGraphic::GetAvailableDevices()
@@ -398,7 +362,8 @@ std::vector<VkPhysicalDevice> VkGraphic::GetAvailableDevices()
 
 void VkGraphic::CreateLogicalDeviceAndQueue()
 {
-    std::set<uint32_t> uniqueQueueFamilies = {familyIndices_.graphicFamilyIdx.value(), familyIndices_.presentFamilyIdx.value()};
+    QueueFamilyIndices familyIndices = GetQueueFamilyProperties(physicalDevice_);
+    std::set<uint32_t> uniqueQueueFamilies = {familyIndices.graphicFamilyIdx.value(), familyIndices.presentFamilyIdx.value()};
     std::vector<VkDeviceQueueCreateInfo> queueCreateList;
     float queuePriority = 1.0f;
 
@@ -420,8 +385,8 @@ void VkGraphic::CreateLogicalDeviceAndQueue()
     deviceCreateInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateList.size());
     deviceCreateInfo.pQueueCreateInfos = queueCreateList.data();
     deviceCreateInfo.pEnabledFeatures = &phyDevFeatures;
-    deviceCreateInfo.enabledExtensionCount = requiredDeviceExtension.size();
-    deviceCreateInfo.ppEnabledExtensionNames = requiredDeviceExtension.data();
+    deviceCreateInfo.enabledExtensionCount = requiredDevExt.size();
+    deviceCreateInfo.ppEnabledExtensionNames = requiredDevExt.data();
 
     VkResult result = vkCreateDevice(physicalDevice_, &deviceCreateInfo, nullptr, &logicalDevice_);
 
@@ -431,9 +396,9 @@ void VkGraphic::CreateLogicalDeviceAndQueue()
         return;
     }
 
-    vkGetDeviceQueue(logicalDevice_, familyIndices_.graphicFamilyIdx.value(), 0, &graphicQueue_);
+    vkGetDeviceQueue(logicalDevice_, familyIndices.graphicFamilyIdx.value(), 0, &graphicQueue_);
 
-    if (familyIndices_.IsSame())
+    if (familyIndices.IsSame())
     {
         // In some cases both Graphic Queue and Present Queue might be the same.
         presentQueue_ = graphicQueue_;
@@ -441,7 +406,7 @@ void VkGraphic::CreateLogicalDeviceAndQueue()
     }
     else
     {
-        vkGetDeviceQueue(logicalDevice_, familyIndices_.presentFamilyIdx.value(), 0, &presentQueue_);
+        vkGetDeviceQueue(logicalDevice_, familyIndices.presentFamilyIdx.value(), 0, &presentQueue_);
     }
 }
 
@@ -470,6 +435,11 @@ SwapChainProperties VkGraphic::GetSwapChainProperties(VkPhysicalDevice device)
     vkGetPhysicalDeviceSurfacePresentModesKHR(device, surfaceKHR_, &presentModeCount, nullptr);
     properties.presentModes.resize(presentModeCount);
     vkGetPhysicalDeviceSurfacePresentModesKHR(device, surfaceKHR_, &presentModeCount, properties.presentModes.data());
+
+    if ((formatCount == 0) && (presentModeCount == 0))
+    {
+        spdlog::warn("VK Instance: Null SwapChainProperties");
+    }
 
     return properties;
 }

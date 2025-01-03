@@ -1,5 +1,8 @@
 #include "VK_Renderer.hpp"
 
+#ifndef VK_RENDERER_IPP // include guard
+#define VK_RENDERER_IPP
+
 namespace Renderer
 {
 
@@ -13,12 +16,6 @@ inline std::vector<VkQueueFamilyProperties> VkGraphic::GetDeviceQueueFamilyPrope
     return familiesProperties;
 }
 
-inline VkPhysicalDeviceProperties VkGraphic::GetPhysicalDeviceProperties(VkPhysicalDevice device)
-{
-    VkPhysicalDeviceProperties deviceProperties = {};
-    vkGetPhysicalDeviceProperties(device, &deviceProperties);
-
-    return deviceProperties;
-}
-
 } // namespace Renderer
+
+#endif // VK_RENDERER_IPP

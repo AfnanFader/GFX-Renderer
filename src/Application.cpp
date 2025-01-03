@@ -1,4 +1,3 @@
-#include "GLFW/glfw3.h"
 #include "Glfw_Initialization.hpp"
 #include "Glfw_Window.hpp"
 #include "Common/Precomp.hpp"
