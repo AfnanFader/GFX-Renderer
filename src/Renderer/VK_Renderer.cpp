@@ -1,7 +1,7 @@
 #include <algorithm>
 #include "GLFW/glfw3.h"
 #include "Precomp.hpp"
-#include "VK_Renderer.hpp"
+#include "VK_Renderer.ipp"
 #include "VK_Utilities.hpp"
 #include "spdlog/spdlog.h"
 
@@ -58,6 +58,12 @@ VkGraphic::~VkGraphic()
             vkDestroyDebugUtilsMessengerEXT(vkInstance_, debugMessenger_, nullptr);
         }
 
+        if (logicalDevice_ != nullptr)
+        {
+            spdlog::info("VK Instance: Terminate Logical Device");
+            vkDestroyDevice(logicalDevice_, nullptr);
+        }
+
         spdlog::info("VK Instance: Terminate VkInstance");
         vkDestroyInstance(vkInstance_, nullptr);
     }
@@ -69,6 +75,7 @@ void VkGraphic::InitializeVulkan()
     CreateInstance();
     SetupDebugMessenger(); // Note that this is optional for now
     PickPhysicalDevice();
+    CreateLogicalDeviceAndQueue();
 }
 
 void VkGraphic::CreateInstance()
@@ -77,11 +84,11 @@ void VkGraphic::CreateInstance()
     std::vector<const char*> requiredExtensions = GetGLFWRequiredExtensions();
     std::vector<const char*> requiredLayers = {"VK_LAYER_KHRONOS_validation"};
 
-    #ifdef __APPLE__
+#ifdef __APPLE__
     // MAC specific extensions
     requiredExtensions.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
     spdlog::warn("VK Instance: Vulkan Portability Enumeration Extension Added");
-    #endif
+#endif
 
     if (!CheckSupportedExtensionProperties(requiredExtensions))
     {
@@ -117,11 +124,12 @@ void VkGraphic::CreateInstance()
     instanceCreationInfo.enabledExtensionCount = static_cast<uint32_t>(requiredExtensions.size());
     instanceCreationInfo.ppEnabledLayerNames = debuggingEnabled_ ? requiredLayers.data() : nullptr;
     instanceCreationInfo.enabledLayerCount = debuggingEnabled_ ? static_cast<uint32_t>(requiredLayers.size()) : 0;
-    #ifdef __APPLE__
+
+#ifdef __APPLE__
     // This flag is require for MoltenVK
     instanceCreationInfo.flags = VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
     spdlog::warn("VK Instance: Enumerate Portability Bit for MoltenVK");
-    #endif
+#endif
 
     VkResult result = vkCreateInstance(&instanceCreationInfo, nullptr, &vkInstance_);
 
@@ -268,12 +276,9 @@ bool VkGraphic::IsPhysicalDeviceCompatible(VkPhysicalDevice device)
     VkPhysicalDeviceProperties deviceProperties = {};
     vkGetPhysicalDeviceProperties(device, &deviceProperties);
 
-    uint32_t queueFamilyCount = 0;
-    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
-    std::vector<VkQueueFamilyProperties> familiesProperties(queueFamilyCount);
-    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, familiesProperties.data());
+    std::vector<VkQueueFamilyProperties> familiesProperties = GetDeviceQueueFamilyProperties(device);
 
-    for (uint32_t i = 0; i < queueFamilyCount; ++i)
+    for (uint32_t i = 0; i < familiesProperties.size(); ++i)
     {
         if (familiesProperties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)
         {
@@ -298,5 +303,48 @@ std::vector<VkPhysicalDevice> VkGraphic::GetAvailableDevices()
 
     return availPhysicalDevices;
 }
+
+void VkGraphic::CreateLogicalDeviceAndQueue()
+{
+    std::vector<VkQueueFamilyProperties> familiesProperties = GetDeviceQueueFamilyProperties(physicalDevice_);
+
+    uint32_t queueFamilyIndex = 0;
+    while (queueFamilyIndex < familiesProperties.size())
+    {
+        if (familiesProperties[queueFamilyIndex].queueFlags & VK_QUEUE_GRAPHICS_BIT)
+        {
+            break;
+        }
+        queueFamilyIndex++;
+    }
+
+    float queuePriority = 1.0f;
+    VkDeviceQueueCreateInfo queueCreateInfo = {};
+    queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+    queueCreateInfo.queueFamilyIndex = queueFamilyIndex;
+    queueCreateInfo.queueCount = 1;
+    queueCreateInfo.pQueuePriorities = &queuePriority;
+    queueCreateInfo.pNext = nullptr;
+
+    VkPhysicalDeviceFeatures phyDevFeatures = {};
+
+    VkDeviceCreateInfo deviceCreateInfo = {};
+    deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+    deviceCreateInfo.queueCreateInfoCount = 1;
+    deviceCreateInfo.pQueueCreateInfos = &queueCreateInfo;
+    deviceCreateInfo.pEnabledFeatures = &phyDevFeatures;
+    deviceCreateInfo.enabledExtensionCount = 0;
+
+    VkResult result = vkCreateDevice(physicalDevice_, &deviceCreateInfo, nullptr, &logicalDevice_);
+
+    if (result != VK_SUCCESS)
+    {
+        spdlog::error("VK Instance: Logical Device creation failed.");
+        return;
+    }
+
+    vkGetDeviceQueue(logicalDevice_, queueFamilyIndex, 0, &graphicQueue_);
+}
+
 
 } // namespace Renderer

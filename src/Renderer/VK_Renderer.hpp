@@ -33,6 +33,7 @@ class VkGraphic final
     void CreateInstance();
     void SetupDebugMessenger();
     void PickPhysicalDevice();
+    void CreateLogicalDeviceAndQueue();
 
     // Extensions Properties handlers
     static std::vector<const char*> GetGLFWRequiredExtensions();
@@ -46,12 +47,16 @@ class VkGraphic final
     // Physical Device handlers
     std::vector<VkPhysicalDevice> GetAvailableDevices();
     bool IsPhysicalDeviceCompatible(VkPhysicalDevice device);
+    std::vector<VkQueueFamilyProperties> GetDeviceQueueFamilyProperties(VkPhysicalDevice device);
     // QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device); <-- To be evalutated
 
-    // Object Instances
+    // Object Instances. Note that theses objects needs to be properly destroyed on de-scope.
+    // TODO: May need to store some extra values in the future.
     VkInstance vkInstance_ = nullptr; // Vulkan Instance
     Window::WindowHandler* windowPtr_; // Pointer to the instantiated GLFW Window
     VkPhysicalDevice physicalDevice_ = nullptr; // GPU Instance
+    VkDevice logicalDevice_ = nullptr; // Logical GPU Binding
+    VkQueue graphicQueue_ = nullptr; // GPU Queue Instance/Access
 
     // Debugging Instances
     bool debuggingEnabled_ = false; // Vulkan Validation Layer
