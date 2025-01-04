@@ -19,4 +19,6 @@ VkDebugUtilsMessengerCreateInfoEXT GetDebugMessengerCreateInfo();
 
 std::vector<const char*> GetGLFWRequiredExtensions();
 
+void DebugPrintVulkanExtension(std::vector<const char*>& requiredExt);
+
 } // namespace Renderer

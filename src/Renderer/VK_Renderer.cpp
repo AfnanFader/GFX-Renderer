@@ -106,7 +106,9 @@ void VkGraphic::CreateInstance()
     spdlog::warn("VK Instance: Vulkan Portability Enumeration Extension Added");
 #endif
 
-    if (!CheckSupportedExtensionProperties(requiredExtensions))
+    requiredExtensions = GetAvailableInstanceExtProperties(requiredExtensions);
+
+    if (requiredExtensions.empty())
     {
         spdlog::critical("VK Instance: No supported Extension properties found");
         std::exit(EXIT_FAILURE);
@@ -183,9 +185,10 @@ std::vector<VkExtensionProperties> VkGraphic::GetSupportedInstanceExtensions()
     return properties;
 }
 
-bool VkGraphic::CheckSupportedExtensionProperties(std::vector<const char*> requiredExtensions)
+std::vector<const char*> VkGraphic::GetAvailableInstanceExtProperties(std::vector<const char*> requiredExtensions)
 {
     std::vector<VkExtensionProperties> availableExtensions = GetSupportedInstanceExtensions();
+    std::vector<const char*> supportedExt;
 
     // Check if all required extensions are available
     for (const char* required : requiredExtensions)
@@ -196,19 +199,19 @@ bool VkGraphic::CheckSupportedExtensionProperties(std::vector<const char*> requi
             if (strcmp(required, extension.extensionName) == 0)
             {
                 spdlog::info("VK Instance: Supported Instance Extensions -> {}",extension.extensionName);
+                supportedExt.push_back(required);
                 found = true;
-
                 break;
             }
         }
+
         if (!found)
         {
-            spdlog::error("VK Instance: Required Instance extension not found");
-            return false;
+            spdlog::warn("VK Instance: Unsupported Instance Extension -> {}", required);
         }
     }
 
-    return true;
+    return supportedExt;
 }
 
 std::vector<VkLayerProperties> VkGraphic::GetSupportedValidationLayers()
@@ -279,7 +282,7 @@ void VkGraphic::PickPhysicalDevice()
 bool VkGraphic::IsPhysicalDeviceCompatible(VkPhysicalDevice device)
 {
     return (GetQueueFamilyProperties(device).IsComplete() &&
-            AreAllDeviceExtensionSupported(device) &&
+            !GetAvailableDeviceExtension(device).empty() &&
             GetSwapChainProperties(device).IsValid());
 }
 
@@ -294,23 +297,31 @@ std::vector<VkExtensionProperties> VkGraphic::GetSupportedDeviceExtesions(VkPhys
     return supportedExtProperties;
 }
 
-bool VkGraphic::AreAllDeviceExtensionSupported(VkPhysicalDevice device)
+std::vector<const char*> VkGraphic::GetAvailableDeviceExtension(VkPhysicalDevice device)
 {
-    std::vector<VkExtensionProperties> availableExtensions = GetSupportedDeviceExtesions(device);
+    std::vector<VkExtensionProperties> supportedDevExt = GetSupportedDeviceExtesions(device);
+    std::vector<const char*> availableDevExt;
 
-    std::set<std::string> requiredExtensionsSet(requiredDevExt.begin(), requiredDevExt.end());
-    
-    for (const auto& extension : availableExtensions)
+    for (auto reqDevExt : requiredDevExt)
     {
-        requiredExtensionsSet.erase(extension.extensionName);
-    }
+        bool found = false;
+        for (auto supDevExt : supportedDevExt)
+        {
+            if (strcmp(reqDevExt, supDevExt.extensionName) == 0)
+            {
+                availableDevExt.push_back(reqDevExt);
+                spdlog::info("VK Instance: Supported Device Extension -> {}",reqDevExt);
+                found = true;
+            }
+        }
 
-    if (requiredExtensionsSet.empty())
-    {
-        spdlog::warn("VK Instance: Requested Device Extensions are not supported");
+        if (!found)
+        {
+            spdlog::warn("VK Instance: Device Extension Non Supported -> {}",reqDevExt);
+        }
     }
     
-    return !requiredExtensionsSet.empty();
+    return availableDevExt;
 }
 
 QueueFamilyIndices VkGraphic::GetQueueFamilyProperties(VkPhysicalDevice device)
@@ -363,6 +374,7 @@ std::vector<VkPhysicalDevice> VkGraphic::GetAvailableDevices()
 void VkGraphic::CreateLogicalDeviceAndQueue()
 {
     QueueFamilyIndices familyIndices = GetQueueFamilyProperties(physicalDevice_);
+    std::vector<const char*> availableDevExt = GetAvailableDeviceExtension(physicalDevice_);
     std::set<uint32_t> uniqueQueueFamilies = {familyIndices.graphicFamilyIdx.value(), familyIndices.presentFamilyIdx.value()};
     std::vector<VkDeviceQueueCreateInfo> queueCreateList;
     float queuePriority = 1.0f;
@@ -385,8 +397,8 @@ void VkGraphic::CreateLogicalDeviceAndQueue()
     deviceCreateInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateList.size());
     deviceCreateInfo.pQueueCreateInfos = queueCreateList.data();
     deviceCreateInfo.pEnabledFeatures = &phyDevFeatures;
-    deviceCreateInfo.enabledExtensionCount = requiredDevExt.size();
-    deviceCreateInfo.ppEnabledExtensionNames = requiredDevExt.data();
+    deviceCreateInfo.enabledExtensionCount = availableDevExt.size();
+    deviceCreateInfo.ppEnabledExtensionNames = availableDevExt.data();
 
     VkResult result = vkCreateDevice(physicalDevice_, &deviceCreateInfo, nullptr, &logicalDevice_);
 

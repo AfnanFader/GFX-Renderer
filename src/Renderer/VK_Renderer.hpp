@@ -66,7 +66,7 @@ class VkGraphic final
 
     // Extensions Properties handlers
     std::vector<VkExtensionProperties> GetSupportedInstanceExtensions();
-    bool CheckSupportedExtensionProperties(std::vector<const char*> requiredExtensions);
+    std::vector<const char*> GetAvailableInstanceExtProperties(std::vector<const char*> requiredExtensions);
 
     // Validation Layer handlers
     static std::vector<VkLayerProperties> GetSupportedValidationLayers();
@@ -81,7 +81,7 @@ class VkGraphic final
 
     // Logical Device handlers
     std::vector<VkExtensionProperties> GetSupportedDeviceExtesions(VkPhysicalDevice device);
-    bool AreAllDeviceExtensionSupported(VkPhysicalDevice device);
+    std::vector<const char*> GetAvailableDeviceExtension(VkPhysicalDevice device);
 
     // Object Instances. Note that theses objects needs to be properly destroyed on de-scope.
 

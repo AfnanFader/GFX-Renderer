@@ -59,5 +59,13 @@ std::vector<const char*> GetGLFWRequiredExtensions()
     return std::vector<const char*>(glfwExtensions, glfwExtensions + glfwExtensionCount);
 }
 
+void DebugPrintVulkanExtension(std::vector<const char*>& requiredExt)
+{
+    for (const char* ext : requiredExt)
+    {
+        spdlog::info("VK Debug : {}",ext);
+    }
+}
+
 
 } // namespace Renderer
