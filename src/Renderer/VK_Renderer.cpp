@@ -48,6 +48,11 @@ static std::vector<const char*> requiredDevExt = {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME
 };
 
+// Required Validation Layers for debugging.
+static std::vector<const char*> requiredValidationLayers = {
+    "VK_LAYER_KHRONOS_validation"
+};
+
 namespace Renderer
 {
 
@@ -97,33 +102,7 @@ void VkGraphic::InitializeVulkan()
 void VkGraphic::CreateInstance()
 {
     VkDebugUtilsMessengerCreateInfoEXT msgCreationInfo = GetDebugMessengerCreateInfo();
-    std::vector<const char*> requiredExtensions = GetGLFWRequiredExtensions();
-    std::vector<const char*> requiredLayers = {"VK_LAYER_KHRONOS_validation"};
-
-#ifdef __APPLE__
-    // MAC specific extensions
-    requiredExtensions.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
-    spdlog::warn("VK Instance: Vulkan Portability Enumeration Extension Added");
-#endif
-
-    requiredExtensions = GetAvailableInstanceExtProperties(requiredExtensions);
-
-    if (requiredExtensions.empty())
-    {
-        spdlog::critical("VK Instance: No supported Extension properties found");
-        std::exit(EXIT_FAILURE);
-    }
-
-    if (!CheckSupportedValidationLayers(requiredLayers))
-    {
-        debuggingEnabled_ = false; // Disable it here since it is not supported
-    }
-    else
-    {
-        // Only append this if Vulkan validation layer is supported.
-        requiredExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-        spdlog::warn("VK Instance: Vulkan Validation/Debugging mode enabled");
-    }
+    std::vector<const char*> supportedInstanceExt = GetSupportedInstanceExtensions();
 
     VkApplicationInfo appInfo = {};
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -138,10 +117,10 @@ void VkGraphic::CreateInstance()
     instanceCreationInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     instanceCreationInfo.pNext = debuggingEnabled_ ? &msgCreationInfo : nullptr;
     instanceCreationInfo.pApplicationInfo = &appInfo;
-    instanceCreationInfo.ppEnabledExtensionNames = requiredExtensions.data();
-    instanceCreationInfo.enabledExtensionCount = static_cast<uint32_t>(requiredExtensions.size());
-    instanceCreationInfo.ppEnabledLayerNames = debuggingEnabled_ ? requiredLayers.data() : nullptr;
-    instanceCreationInfo.enabledLayerCount = debuggingEnabled_ ? static_cast<uint32_t>(requiredLayers.size()) : 0;
+    instanceCreationInfo.ppEnabledExtensionNames = supportedInstanceExt.data();
+    instanceCreationInfo.enabledExtensionCount = static_cast<uint32_t>(supportedInstanceExt.size());
+    instanceCreationInfo.ppEnabledLayerNames = debuggingEnabled_ ? requiredValidationLayers.data() : nullptr;
+    instanceCreationInfo.enabledLayerCount = debuggingEnabled_ ? static_cast<uint32_t>(requiredValidationLayers.size()) : 0;
 
 #ifdef __APPLE__
     // This flag is require for MoltenVK
@@ -172,67 +151,12 @@ void VkGraphic::SetupDebugMessenger()
     }
 }
 
-std::vector<VkExtensionProperties> VkGraphic::GetSupportedInstanceExtensions()
+bool VkGraphic::CheckSupportedValidationLayers()
 {
-    uint32_t extensionCount = 0;
-    vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
-
-    if (extensionCount == 0) { return {}; }
-
-    std::vector<VkExtensionProperties> properties(extensionCount);
-    vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, properties.data());
-
-    return properties;
-}
-
-std::vector<const char*> VkGraphic::GetAvailableInstanceExtProperties(std::vector<const char*> requiredExtensions)
-{
-    std::vector<VkExtensionProperties> availableExtensions = GetSupportedInstanceExtensions();
-    std::vector<const char*> supportedExt;
-
-    // Check if all required extensions are available
-    for (const char* required : requiredExtensions)
-    {
-        bool found = false;
-        for (const auto& extension : availableExtensions)
-        {
-            if (strcmp(required, extension.extensionName) == 0)
-            {
-                spdlog::info("VK Instance: Supported Instance Extensions -> {}",extension.extensionName);
-                supportedExt.push_back(required);
-                found = true;
-                break;
-            }
-        }
-
-        if (!found)
-        {
-            spdlog::warn("VK Instance: Unsupported Instance Extension -> {}", required);
-        }
-    }
-
-    return supportedExt;
-}
-
-std::vector<VkLayerProperties> VkGraphic::GetSupportedValidationLayers()
-{
-    uint32_t layerCount = 0;
-    vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
-
-    if (layerCount == 0) { return {}; }
-
-    std::vector<VkLayerProperties> availableLayers(layerCount);
-    vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
-    
-    return availableLayers;
-}
-
-bool VkGraphic::CheckSupportedValidationLayers(std::vector<const char*> requiredLayers)
-{
-    std::vector<VkLayerProperties> availableLayers = GetSupportedValidationLayers();
+    std::vector<VkLayerProperties> availableLayers = GetAvailableValidationLayers();
 
     // Check if all required layers are available
-    for (const char* required : requiredLayers)
+    for (const char* required : requiredValidationLayers)
     {
         bool found = false;
         for (const auto& layers : availableLayers)
@@ -253,6 +177,34 @@ bool VkGraphic::CheckSupportedValidationLayers(std::vector<const char*> required
     }
 
     return true;
+}
+
+std::vector<const char*> VkGraphic::GetSupportedInstanceExtensions()
+{
+    std::vector<const char*> reqInstExt = GetGLFWRequiredExtensions();
+    std::vector<VkExtensionProperties> availInstExt = GetAvailableInstanceExtensions();
+    std::vector<const char*> supInstExt;
+
+#ifdef __APPLE__
+    reqInstExt.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
+    spdlog::warn("VK Instance: Vulkan Portability Enumeration Extension Added");
+#endif
+
+    if (!CheckSupportedValidationLayers())
+    {
+        debuggingEnabled_ = false; // Disable it here since it is not supported
+    }
+    else
+    {
+        // Only append this if Vulkan validation layer is supported.
+        reqInstExt.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+        spdlog::warn("VK Instance: Vulkan Validation/Debugging mode enabled");
+    }
+
+    spdlog::info("VK Instance: Checking Supported Instance Extensions");
+    CheckVkSupportedExtProperties(reqInstExt, availInstExt, supInstExt);
+
+    return supInstExt;
 }
 
 void VkGraphic::PickPhysicalDevice()
@@ -282,46 +234,19 @@ void VkGraphic::PickPhysicalDevice()
 bool VkGraphic::IsPhysicalDeviceCompatible(VkPhysicalDevice device)
 {
     return (GetQueueFamilyProperties(device).IsComplete() &&
-            !GetAvailableDeviceExtension(device).empty() &&
+            !GetSupportedDeviceExtensions(device).empty() &&
             GetSwapChainProperties(device).IsValid());
 }
 
-std::vector<VkExtensionProperties> VkGraphic::GetSupportedDeviceExtesions(VkPhysicalDevice device)
+std::vector<const char*> VkGraphic::GetSupportedDeviceExtensions(VkPhysicalDevice device)
 {
-    uint32_t allDevExtCount = 0;
-    vkEnumerateDeviceExtensionProperties(device, nullptr, &allDevExtCount, nullptr);
+    std::vector<VkExtensionProperties> availDevExt = GetAvailableDeviceExtensions(device);
+    std::vector<const char*> supportedDevExt;
 
-    std::vector<VkExtensionProperties> supportedExtProperties(allDevExtCount);
-    vkEnumerateDeviceExtensionProperties(device, nullptr, &allDevExtCount, supportedExtProperties.data());
-
-    return supportedExtProperties;
-}
-
-std::vector<const char*> VkGraphic::GetAvailableDeviceExtension(VkPhysicalDevice device)
-{
-    std::vector<VkExtensionProperties> supportedDevExt = GetSupportedDeviceExtesions(device);
-    std::vector<const char*> availableDevExt;
-
-    for (auto reqDevExt : requiredDevExt)
-    {
-        bool found = false;
-        for (auto supDevExt : supportedDevExt)
-        {
-            if (strcmp(reqDevExt, supDevExt.extensionName) == 0)
-            {
-                availableDevExt.push_back(reqDevExt);
-                spdlog::info("VK Instance: Supported Device Extension -> {}",reqDevExt);
-                found = true;
-            }
-        }
-
-        if (!found)
-        {
-            spdlog::warn("VK Instance: Device Extension Non Supported -> {}",reqDevExt);
-        }
-    }
+    spdlog::info("VK Instance: Checking Supported Device Extensions");
+    CheckVkSupportedExtProperties(requiredDevExt, availDevExt, supportedDevExt);
     
-    return availableDevExt;
+    return supportedDevExt;
 }
 
 QueueFamilyIndices VkGraphic::GetQueueFamilyProperties(VkPhysicalDevice device)
@@ -374,7 +299,7 @@ std::vector<VkPhysicalDevice> VkGraphic::GetAvailableDevices()
 void VkGraphic::CreateLogicalDeviceAndQueue()
 {
     QueueFamilyIndices familyIndices = GetQueueFamilyProperties(physicalDevice_);
-    std::vector<const char*> availableDevExt = GetAvailableDeviceExtension(physicalDevice_);
+    std::vector<const char*> availableDevExt = GetSupportedDeviceExtensions(physicalDevice_);
     std::set<uint32_t> uniqueQueueFamilies = {familyIndices.graphicFamilyIdx.value(), familyIndices.presentFamilyIdx.value()};
     std::vector<VkDeviceQueueCreateInfo> queueCreateList;
     float queuePriority = 1.0f;

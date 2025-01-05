@@ -49,6 +49,14 @@ VkDebugUtilsMessengerCreateInfoEXT GetDebugMessengerCreateInfo()
     return msgCreationInfo;
 }
 
+void DebugPrintVulkanExtension(std::vector<const char*>& requiredExt)
+{
+    for (const char* ext : requiredExt)
+    {
+        spdlog::info("VK Debug : {}",ext);
+    }
+}
+
 std::vector<const char*> GetGLFWRequiredExtensions()
 {
     uint32_t glfwExtensionCount = 0;
@@ -59,12 +67,43 @@ std::vector<const char*> GetGLFWRequiredExtensions()
     return std::vector<const char*>(glfwExtensions, glfwExtensions + glfwExtensionCount);
 }
 
-void DebugPrintVulkanExtension(std::vector<const char*>& requiredExt)
+std::vector<VkExtensionProperties> GetAvailableInstanceExtensions()
 {
-    for (const char* ext : requiredExt)
-    {
-        spdlog::info("VK Debug : {}",ext);
-    }
+    uint32_t extensionCount = 0;
+    vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
+
+    if (extensionCount == 0) { return {}; }
+
+    std::vector<VkExtensionProperties> availableProperties(extensionCount);
+    vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, availableProperties.data());
+
+    return availableProperties;
+}
+
+std::vector<VkLayerProperties> GetAvailableValidationLayers()
+{
+    uint32_t layerCount = 0;
+    vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
+
+    if (layerCount == 0) { return {}; }
+
+    std::vector<VkLayerProperties> availableLayers(layerCount);
+    vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
+    
+    return availableLayers;
+}
+
+std::vector<VkExtensionProperties> GetAvailableDeviceExtensions(VkPhysicalDevice device)
+{
+    uint32_t allDevExtCount = 0;
+    vkEnumerateDeviceExtensionProperties(device, nullptr, &allDevExtCount, nullptr);
+
+    if (allDevExtCount == 0) { return {}; }
+
+    std::vector<VkExtensionProperties> availableProperties(allDevExtCount);
+    vkEnumerateDeviceExtensionProperties(device, nullptr, &allDevExtCount, availableProperties.data());
+
+    return availableProperties;
 }
 
 

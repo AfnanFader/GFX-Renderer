@@ -17,8 +17,14 @@ typedef enum VkDebugMessageSeverity {
 
 VkDebugUtilsMessengerCreateInfoEXT GetDebugMessengerCreateInfo();
 
+void DebugPrintVulkanExtension(std::vector<const char*>& requiredExt);
+
 std::vector<const char*> GetGLFWRequiredExtensions();
 
-void DebugPrintVulkanExtension(std::vector<const char*>& requiredExt);
+std::vector<VkLayerProperties> GetAvailableValidationLayers();
+
+std::vector<VkExtensionProperties> GetAvailableInstanceExtensions();
+
+std::vector<VkExtensionProperties> GetAvailableDeviceExtensions(VkPhysicalDevice device);
 
 } // namespace Renderer

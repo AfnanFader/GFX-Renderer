@@ -15,6 +15,27 @@ namespace Window { class WindowHandler; }
 #define VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES2_EXTENSION_NAME "VK_KHR_get_physical_device_properties2" 
 #endif
 
+// Macro for Check Extensions properties
+#define CheckVkSupportedExtProperties(requiredExtensions, availableExtensions, supportedExtensions)  \
+    for (const char* required : requiredExtensions)                                                  \
+    {                                                                                                \
+        bool found = false;                                                                          \
+        for (const auto& extension : availableExtensions)                                            \
+        {                                                                                            \
+            if (strcmp(required, extension.extensionName) == 0)                                      \
+            {                                                                                        \
+                spdlog::info("VK Instance: Supported -> {}",extension.extensionName);                \
+                supportedExtensions.push_back(required);                                             \
+                found = true;                                                                        \
+                break;                                                                               \
+            }                                                                                        \
+        }                                                                                            \
+        if (!found)                                                                                  \
+        {                                                                                            \
+            spdlog::warn("VK Instance: Unsupported -> {}", required);                                \
+        }                                                                                            \
+    }                                                                                                \
+
 namespace Renderer
 {
 
@@ -64,24 +85,23 @@ class VkGraphic final
     void CreateSurface();
     // void CreateSwapChain(); // Handles the frame queue to be on screen.
 
-    // Extensions Properties handlers
-    std::vector<VkExtensionProperties> GetSupportedInstanceExtensions();
-    std::vector<const char*> GetAvailableInstanceExtProperties(std::vector<const char*> requiredExtensions);
 
-    // Validation Layer handlers
-    static std::vector<VkLayerProperties> GetSupportedValidationLayers();
-    bool CheckSupportedValidationLayers(std::vector<const char*> requiredLayers);
 
-    // Physical Device handlers
     std::vector<VkPhysicalDevice> GetAvailableDevices();
     bool IsPhysicalDeviceCompatible(VkPhysicalDevice device);
+
     QueueFamilyIndices GetQueueFamilyProperties(VkPhysicalDevice device);
     std::vector<VkQueueFamilyProperties> GetDeviceQueueFamilyProperties(VkPhysicalDevice device);
+
+    std::vector<const char*> GetSupportedInstanceExtensions();
+
+    bool CheckSupportedValidationLayers();
+
+    std::vector<const char*> GetSupportedDeviceExtensions(VkPhysicalDevice device);
+
+
     SwapChainProperties GetSwapChainProperties(VkPhysicalDevice device);
 
-    // Logical Device handlers
-    std::vector<VkExtensionProperties> GetSupportedDeviceExtesions(VkPhysicalDevice device);
-    std::vector<const char*> GetAvailableDeviceExtension(VkPhysicalDevice device);
 
     // Object Instances. Note that theses objects needs to be properly destroyed on de-scope.
 
