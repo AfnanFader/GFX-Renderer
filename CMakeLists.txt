@@ -66,9 +66,9 @@ if (WIN32)
         "${GLFW_LIB}/glfw3.dll" $<TARGET_FILE_DIR:${PROJECT_NAME}>
     )
 elseif (APPLE)
-    target_link_libraries(${PROJECT_NAME} "${GLFW_LIB}/glfw3.a") 
+    target_link_libraries(${PROJECT_NAME} "${GLFW_LIB}/libglfw3.a") 
     add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-    "${GLFW_LIB}/glfw3.dylib" $<TARGET_FILE_DIR:${PROJECT_NAME}>
+    "${GLFW_LIB}/libglfw.3.dylib" $<TARGET_FILE_DIR:${PROJECT_NAME}>
     )
 endif()
