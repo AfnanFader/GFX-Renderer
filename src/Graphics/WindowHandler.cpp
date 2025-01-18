@@ -1,6 +1,7 @@
-#include <WindowHandler.hpp>
+#include <Graphics/WindowHandler.hpp>
 #include <GLFW/glfw3.h>
 #include <Logging.hpp>
+#include <Settings.hpp>
 
 namespace Graphic
 {
@@ -39,7 +40,7 @@ void WindowHandler::InitWindow()
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE); // Temporary setting for non resizable window for now.
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API); // Setto not load OpenGL by default.
 
-    window_ = glfwCreateWindow(854, 480, "GFX-Renderer", nullptr, nullptr); // Starting with hardcoded 16:9
+    window_ = glfwCreateWindow(DISPLAY_WIDTH, DISPLAY_HEIGHT, "GFX-Renderer", nullptr, nullptr); // Starting with hardcoded 16:9
     monitorArr_ = glfwGetMonitors(&monitorCount_);
 
     if (window_ == nullptr || monitorArr_ == nullptr)

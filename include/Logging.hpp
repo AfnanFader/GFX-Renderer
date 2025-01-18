@@ -25,4 +25,8 @@
     SPDLOG_LOGGER_CALL(spdlog::default_logger_raw(), spdlog::level::err, __VA_ARGS__); \
     std::exit(EXIT_FAILURE); \
 
+#define LOG_CRITICAL_EXIT(...) \
+    SPDLOG_LOGGER_CALL(spdlog::default_logger_raw(), spdlog::level::critical, __VA_ARGS__); \
+    std::exit(EXIT_FAILURE); \
+
 #endif

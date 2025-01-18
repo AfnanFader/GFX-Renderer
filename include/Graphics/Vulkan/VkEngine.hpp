@@ -1,11 +1,14 @@
-#ifndef GRAPHIC_VULKAN_VULKANINITIALIZER_HPP
-#define GRAPHIC_VULKAN_VULKANINITIALIZER_HPP
+#ifndef GRAPHIC_VULKAN_VKENGINE_HPP
+#define GRAPHIC_VULKAN_VKENGINE_HPP
 #pragma once
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 #include <vulkan/vulkan.h>
-#include <WindowHandler.hpp>
+#ifdef __APPLE__
+#include <vulkan/vulkan_beta.h>
+#endif
+#include <Graphics/WindowHandler.hpp>
 #include <Global.hpp>
 #include <Settings.hpp>
 #include <vector>
@@ -25,7 +28,6 @@
         {                                                                                            \
             if (strcmp(required, extension.extensionName) == 0)                                      \
             {                                                                                        \
-                LOG_INFO("VK Instance: Supported -> {}",extension.extensionName);                \
                 supportedExtensions.push_back(required);                                             \
                 found = true;                                                                        \
                 break;                                                                               \
@@ -33,14 +35,13 @@
         }                                                                                            \
         if (!found)                                                                                  \
         {                                                                                            \
-            LOG_WARN("VK Instance: Unsupported -> {}", required);                                \
+            LOG_WARN("VK Instance: Unsupported -> {}", required);                                    \
         }                                                                                            \
     }                                                                                                \
 
 
 namespace Graphic
 {
-
 
 // Required Vulkan Entensions.
 static std::vector<const char*> requiredDevExt = {
@@ -55,6 +56,11 @@ static std::vector<const char*> requiredDevExt = {
 static std::vector<const char*> requiredValidationLayers = {
     "VK_LAYER_KHRONOS_validation",
 };
+
+//----------------------------------------------------------------------------//
+
+// Constants
+constexpr uint32_t INVALID_VK_EXTENT = std::numeric_limits<uint32_t>::max();
 
 // Error Callback enums
 typedef enum VkDebugMessageSeverity {
@@ -72,16 +78,21 @@ struct SwapChainCapabilities
     VkSurfaceCapabilitiesKHR capabilities;
     std::vector<VkSurfaceFormatKHR> formats;
     std::vector<VkPresentModeKHR> presentModes;
+
+    bool IsValid() const
+    {
+        return (!formats.empty() && !presentModes.empty());
+    }
 };
 
 struct QueueFamilyIndices
 {
     uint32_t graphicsFamilyIdx;
-    uint32_t presentFamilyIdex;
+    uint32_t presentFamilyIdx;
     bool graphicsFamilyHaxValue = false;
     bool presentFamilyHasValue = false;
 
-    bool IsComplete()
+    bool IsComplete() const
     {
         return (graphicsFamilyHaxValue && presentFamilyHasValue);
     }
@@ -89,30 +100,53 @@ struct QueueFamilyIndices
 
 //----------------------------------------------------------------------------//
 
-class VulkanInitializer
+class VkEngine
 {
 
 public:
-    VulkanInitializer(WindowHandler* window);
-    ~VulkanInitializer();
+    VkEngine(WindowHandler* window);
+    ~VkEngine();
 
     // Move operators - prevent creating multiple copies
-    VulkanInitializer(const VulkanInitializer&) = delete;
-    VulkanInitializer(VulkanInitializer&&) = delete;
-    VulkanInitializer &operator=(VulkanInitializer&&) = delete;
-    void operator=(const VulkanInitializer&) = delete; 
+    VkEngine(const VkEngine&) = delete;
+    VkEngine(VkEngine&&) = delete;
+    VkEngine &operator=(VkEngine&&) = delete;
+    void operator=(const VkEngine&) = delete; 
+
+    VkDevice GetLogicalDevice();
 
 private:
+    // Main Initializers
     void InitVulkan();
-    void CreateSurface();
-    void SetupDebugMessenger();
-    void PickPhysicalDevice();
 
     // Instance creation functions
     void CreateInstance();
     std::vector<const char*> GetSupportedInstanceExtensions();
     bool CheckSupportedValidationLayers();
+
+    // Debugging/Validation setup functions
+    void SetupDebugMessenger();
+
+    // Create Surface functions
+    void CreateSurface();
+
+    // Physical Device selections functions.
+    void PickPhysicalDevice();
+    bool IsDeviceCompatible(VkPhysicalDevice device);
+    std::vector<const char*> GetSupportedDeviceExtensions(VkPhysicalDevice device);
+    QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device);
+    SwapChainCapabilities GetSwapChainSupport(VkPhysicalDevice device);
     
+    // Bind Physical Device into a logical abstract
+    void CreateLogicalDeviceAndQueue();
+
+    // Implement swapchain, this handles frame output to the window context
+    void CreateSwapChain();
+    VkPresentModeKHR PickSwapPresentMode(std::vector<VkPresentModeKHR> presentModes);
+    VkSurfaceFormatKHR PickSwapSurfaceFormat(std::vector<VkSurfaceFormatKHR> formats);
+    VkExtent2D PickSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
+    uint32_t PickSwapImageCount(const VkSurfaceCapabilitiesKHR& capabilities);
+
 //----------------------------------------------------------------------------//
 
     WindowHandler* window_ = nullptr; // Window instance SDL or GLFW
@@ -121,8 +155,14 @@ private:
     VkSurfaceKHR surfaceKHR_ = VK_NULL_HANDLE; // Surface to draw on
 
     VkPhysicalDevice physicalDevice_ = VK_NULL_HANDLE; // Physical GPU Instance
-    VkDevice logicalDevice_ = VK_NULL_HANDLE; // Logical GPU instance
+    VkPhysicalDeviceProperties phyDevProperties_ = {}; // Physical Device Properties
 
+    VkDevice logicalDevice_ = VK_NULL_HANDLE; // Logical GPU instance
+    VkQueue graphicsQueue_ = VK_NULL_HANDLE;
+    VkQueue presentQueue_ = VK_NULL_HANDLE;
+
+    VkSwapchainKHR swapChainInst_ = VK_NULL_HANDLE;
+    
     // Debugging control
     bool debuggingEnabled_ = ENABLE_VULKAN_VALIDATION;
     VkDebugUtilsMessengerEXT debugMessenger_;
