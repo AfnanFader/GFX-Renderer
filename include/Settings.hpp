@@ -8,6 +8,7 @@
 // Temp settings for windows control
 #define DISPLAY_WIDTH 800
 #define DISPLAY_HEIGHT 600
+#define MAX_FRAMES_IN_FLIGHT 2;
 
 // Temp shader location <-- might use json for future proofing
 #define VERT_SHADER_PATH "/Assets/Compiled_Shaders/simple_vert_shader.spv"

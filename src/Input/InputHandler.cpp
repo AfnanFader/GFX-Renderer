@@ -1,7 +1,9 @@
 #include <Graphics/WindowHandler.hpp>
+#include <Input/InputHandler.ipp>
+
+// External Lib
 #include <GLFW/glfw3.h>
 #include <Logging.hpp>
-#include <InputHandler.hpp>
 
 namespace Input
 {

@@ -1,8 +1,8 @@
 #ifndef GRAPHICs_HANDLER_HPP
 #define GRAPHICs_HANDLER_HPP
 
-#include <Graphics/Vulkan/VkEngine.hpp>
-#include <Graphics/RenderPipeline.hpp>
+#include <Graphics/Vulkan/VkInstanceImpl.hpp>
+#include <Graphics/Vulkan/VkPipelineImpl.hpp>
 
 namespace Graphic
 {
@@ -22,12 +22,12 @@ private:
     void Cleanup();
 
     WindowHandler window_{};
-    VkEngine vkInstance_{&window_};
-    RenderPipeline pipe_{
+    VkDeviceInstance vkInstance_{&window_};
+    GraphicPipeline pipe_{
         &vkInstance_,
         VERT_SHADER_PATH,
         FRAG_SHADER_PATH,
-        RenderPipeline::DefaultPipeLineConfigInfo(DISPLAY_WIDTH, DISPLAY_HEIGHT)};
+        GraphicPipeline::DefaultPipeLineConfigInfo(DISPLAY_WIDTH, DISPLAY_HEIGHT)};
 };
 
 } // namespace Graphic

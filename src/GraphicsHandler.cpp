@@ -1,5 +1,5 @@
 #include <GraphicsHandler.hpp>
-#include <InputHandler.hpp>
+#include <Input/InputHandler.ipp>
 
 namespace Graphic
 {
@@ -14,7 +14,7 @@ GraphicsHandler::~GraphicsHandler()
 
 void GraphicsHandler::RenderLoop()
 {
-    glfwSetKeyCallback(window_.GetWindowHandlerPointer() ,Input::KeyCallBack);
+    glfwSetKeyCallback(window_.GetWindowHandlerPointer(), Input::KeyCallBack);
 
     while (!window_.ShouldCloseWindow())
     {

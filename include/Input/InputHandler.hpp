@@ -1,7 +1,8 @@
-#ifndef INPUTHANDLER_HPP
-#define INPUTHANDLER_HPP
+#ifndef INPUT_INPUTHANDLER_HPP
+#define INPUT_INPUTHANDLER_HPP
 #pragma once
 
+// Forward declarations
 class GLFWwindow;
 
 namespace Input

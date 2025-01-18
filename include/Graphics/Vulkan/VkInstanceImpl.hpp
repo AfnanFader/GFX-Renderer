@@ -1,18 +1,26 @@
-#ifndef GRAPHIC_VULKAN_VKENGINE_HPP
-#define GRAPHIC_VULKAN_VKENGINE_HPP
+#ifndef GRAPHIC_VULKAN_VKINSTANCEIMPL_HPP
+#define GRAPHIC_VULKAN_VKINSTANCEIMPL_HPP
 #pragma once
 
+#include <Graphics/WindowHandler.hpp>
+#include <Global.hpp>
+#include <Settings.hpp>
+
+// External Lib
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 #include <vulkan/vulkan.h>
 #ifdef __APPLE__
 #include <vulkan/vulkan_beta.h>
 #endif
-#include <Graphics/WindowHandler.hpp>
-#include <Global.hpp>
-#include <Settings.hpp>
+
+// STD Lib
 #include <vector>
 #include <string>
+
+// Forward Declarations
+namespace Graphic { struct QueueFamilyIndices; }
+namespace Graphic { struct SwapChainCapabilities; }
 
 // Mac workaroud
 #ifndef VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES2_EXTENSION_NAME 
@@ -73,47 +81,20 @@ typedef enum VkDebugMessageSeverity {
 
 //----------------------------------------------------------------------------//
 
-struct SwapChainCapabilities
-{
-    VkSurfaceCapabilitiesKHR capabilities;
-    std::vector<VkSurfaceFormatKHR> formats;
-    std::vector<VkPresentModeKHR> presentModes;
-
-    bool IsValid() const
-    {
-        return (!formats.empty() && !presentModes.empty());
-    }
-};
-
-struct QueueFamilyIndices
-{
-    uint32_t graphicsFamilyIdx;
-    uint32_t presentFamilyIdx;
-    bool graphicsFamilyHaxValue = false;
-    bool presentFamilyHasValue = false;
-
-    bool IsComplete() const
-    {
-        return (graphicsFamilyHaxValue && presentFamilyHasValue);
-    }
-};
-
-//----------------------------------------------------------------------------//
-
-class VkEngine
+class VkDeviceInstance
 {
 
 public:
-    VkEngine(WindowHandler* window);
-    ~VkEngine();
+    VkDeviceInstance(WindowHandler* window);
+    ~VkDeviceInstance();
 
     // Move operators - prevent creating multiple copies
-    VkEngine(const VkEngine&) = delete;
-    VkEngine(VkEngine&&) = delete;
-    VkEngine &operator=(VkEngine&&) = delete;
-    void operator=(const VkEngine&) = delete; 
+    VkDeviceInstance(const VkDeviceInstance&) = delete;
+    VkDeviceInstance(VkDeviceInstance&&) = delete;
+    VkDeviceInstance &operator=(VkDeviceInstance&&) = delete;
+    void operator=(const VkDeviceInstance&) = delete; 
 
-    VkDevice GetLogicalDevice();
+    VkDevice GetLogicalDevice() { return logicalDevice_; }
 
 private:
     // Main Initializers
@@ -147,6 +128,9 @@ private:
     VkExtent2D PickSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
     uint32_t PickSwapImageCount(const VkSurfaceCapabilitiesKHR& capabilities);
 
+    // Command Pool creation
+    void CreateCommandPool();
+
 //----------------------------------------------------------------------------//
 
     WindowHandler* window_ = nullptr; // Window instance SDL or GLFW
@@ -163,6 +147,8 @@ private:
 
     VkSwapchainKHR swapChainInst_ = VK_NULL_HANDLE;
     
+    VkCommandPool commandPool_ = VK_NULL_HANDLE;
+
     // Debugging control
     bool debuggingEnabled_ = ENABLE_VULKAN_VALIDATION;
     VkDebugUtilsMessengerEXT debugMessenger_;

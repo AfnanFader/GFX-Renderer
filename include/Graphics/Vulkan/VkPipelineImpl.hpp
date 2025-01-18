@@ -1,8 +1,8 @@
-#ifndef GRAPHICS_RENDERPIPELINE_HPP
-#define GRAPHICS_RENDERPIPELINE_HPP
+#ifndef GRAPHICS_VKPIPELINEIMPL_HPP
+#define GRAPHICS_VKPIPELINEIMPL_HPP
 #pragma once
 
-#include <Graphics/Vulkan/VkEngine.hpp>
+#include <Graphics/Vulkan/VkInstanceImpl.hpp>
 
 #include <string>
 #include <vector>
@@ -27,19 +27,19 @@ struct PipelineConfigInfo
     uint32_t subpass = 0;
 };
 
-class RenderPipeline
+class GraphicPipeline
 {
 
 public:
-    RenderPipeline(
-        VkEngine* instance,
+    GraphicPipeline(
+        VkDeviceInstance* instance,
         const std::string& vertFilePath,
         const std::string& fragFilePath,
         const PipelineConfigInfo& configInfo);
-    ~RenderPipeline();
+    ~GraphicPipeline();
 
-    RenderPipeline(const RenderPipeline&) = delete;
-    void operator=(const RenderPipeline) = delete;
+    GraphicPipeline(const GraphicPipeline&) = delete;
+    void operator=(const GraphicPipeline) = delete;
 
     static PipelineConfigInfo DefaultPipeLineConfigInfo(uint32_t width, uint32_t height);
 
@@ -51,14 +51,14 @@ private:
         const std::string& fragFilePath,
         const PipelineConfigInfo& configInfo);
 
-    void createShaderModule(const std::vector<char>& code, VkShaderModule* shaderModule);
+    void CreateShaderModule(const std::vector<char>& code, VkShaderModule* shaderModule);
 
 //----------------------------------------------------------------------------//
 
     VkDevice device_ = nullptr;
     VkPipeline renderPipeline_ = VK_NULL_HANDLE;
     VkShaderModule vertShaderModule_ = VK_NULL_HANDLE;
-    VkShaderModule fragShaderMofule_ = VK_NULL_HANDLE;
+    VkShaderModule fragShaderModule_ = VK_NULL_HANDLE;
 };
     
 } // namespace Graphic
