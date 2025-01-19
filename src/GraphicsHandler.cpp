@@ -8,10 +8,31 @@
 namespace Graphic
 {
 
+static void sierpinski(
+        std::vector<Vertex> &vertices,
+        int depth,
+        glm::vec2 left,
+        glm::vec2 right,
+        glm::vec2 top) {
+    if (depth <= 0) {
+        vertices.push_back({top});
+        vertices.push_back({right});
+        vertices.push_back({left});
+    } else {
+        auto leftTop = 0.5f * (left + top);
+        auto rightTop = 0.5f * (right + top);
+        auto leftRight = 0.5f * (left + right);
+        sierpinski(vertices, depth - 1, left, leftRight, leftTop);
+        sierpinski(vertices, depth - 1, leftRight, right, rightTop);
+        sierpinski(vertices, depth - 1, leftTop, rightTop, top);
+    }
+}
+
 GraphicsHandler::GraphicsHandler() 
 {
+    loadModels();
     CreatePipelineLayout();
-    CreatePipeline();
+    RecreateSwapChain();
     CreateCommandBuffer();
 }
 
@@ -41,10 +62,10 @@ void GraphicsHandler::RenderLoop()
 void GraphicsHandler::CreatePipeline()
 {
     auto pipelineConfig = GraphicPipeline::DefaultPipeLineConfigInfo(
-        swapChainInst_.GetWidth(),
-        swapChainInst_.GetHeight()
+        swapChainInst_->GetWidth(),
+        swapChainInst_->GetHeight()
     );
-    pipelineConfig.renderPass = swapChainInst_.GetRenderPass();
+    pipelineConfig.renderPass = swapChainInst_->GetRenderPass();
     pipelineConfig.pipelineLayout = pipelineLayout_;
 
     pipeline_ = std::make_unique<GraphicPipeline>(
@@ -52,6 +73,24 @@ void GraphicsHandler::CreatePipeline()
         VERT_SHADER_PATH,
         FRAG_SHADER_PATH,
         pipelineConfig);
+}
+
+void GraphicsHandler::RecreateSwapChain()
+{
+    auto extent = window_.GetWindowExtent();
+    while ((extent.width == 0) || (extent.height == 0))
+    {
+        extent = window_.GetWindowExtent();
+        glfwWaitEvents();
+    }
+    vkDeviceWaitIdle(vkInstance_.GetLogicalDevice());
+
+     // HELL YEAH, the object was not destroyed quickly enough to release 
+     // the surface from GLFW. Caused - VK_ERROR_NATIVE_WINDOW_IN_USE_KHR
+    swapChainInst_.reset();
+
+    swapChainInst_ = std::make_unique<SwapChainInstance>(&vkInstance_, extent);
+    CreatePipeline();
 }
 
 void GraphicsHandler::CreatePipelineLayout()
@@ -72,7 +111,7 @@ void GraphicsHandler::CreatePipelineLayout()
 
 void GraphicsHandler::CreateCommandBuffer()
 {
-    commandBuffer_.resize(swapChainInst_.GetImageCount());
+    commandBuffer_.resize(swapChainInst_->GetImageCount());
 
     VkCommandBufferAllocateInfo allocInfo = {};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -84,59 +123,87 @@ void GraphicsHandler::CreateCommandBuffer()
         vkAllocateCommandBuffers(vkInstance_.GetLogicalDevice(), &allocInfo, commandBuffer_.data()),
         "CommandBuffer: Failed to allocate command buffer !!"
     )
+}
 
-    for (int i = 0; i < commandBuffer_.size(); i++)
-    {
-        // Check if the recording of command is started.
-        VkCommandBufferBeginInfo beginInfo = {};
-        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-        VK_CHECK(
-            vkBeginCommandBuffer(commandBuffer_[i], &beginInfo),
-            "CommandBuffer: Failed to start recording command !!"
-        )
+void GraphicsHandler::RecordCommandBuffer(int imageIndex)
+{
+    // Check if the recording of command is started.
+    VkCommandBufferBeginInfo beginInfo = {};
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    VK_CHECK(
+        vkBeginCommandBuffer(commandBuffer_[imageIndex], &beginInfo),
+        "CommandBuffer: Failed to start recording command !!"
+    )
 
-        VkRenderPassBeginInfo renderPassInfo = {};
-        renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-        renderPassInfo.renderPass = swapChainInst_.GetRenderPass();
-        renderPassInfo.framebuffer = swapChainInst_.GetFrameBuffer(i);
+    VkRenderPassBeginInfo renderPassInfo = {};
+    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    renderPassInfo.renderPass = swapChainInst_->GetRenderPass();
+    renderPassInfo.framebuffer = swapChainInst_->GetFrameBuffer(imageIndex);
 
-        renderPassInfo.renderArea.offset = {0,0};
-        renderPassInfo.renderArea.extent = swapChainInst_.GetSwapChainExtent();
+    renderPassInfo.renderArea.offset = {0,0};
+    renderPassInfo.renderArea.extent = swapChainInst_->GetSwapChainExtent();
 
-        // Both color attachment and depth attachemnt indexs are binded
-        // at the Swapchain Instantiation during the CreateRenderPass()
-        std::array<VkClearValue, 2> clearValues{};
-        clearValues[0].color = {1.0f, 0.1f, 0.1f, 1.0f};
-        clearValues[1].depthStencil = {1.0f, 0};
-        renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-        renderPassInfo.pClearValues = clearValues.data();
+    // Both color attachment and depth attachemnt indexs are binded
+    // at the Swapchain Instantiation during the CreateRenderPass()
+    std::array<VkClearValue, 2> clearValues{};
+    clearValues[0].color = {0.1f, 0.1f, 0.1f, 1.0f};
+    clearValues[1].depthStencil = {1.0f, 0};
+    renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+    renderPassInfo.pClearValues = clearValues.data();
 
-        vkCmdBeginRenderPass(commandBuffer_[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+    vkCmdBeginRenderPass(commandBuffer_[imageIndex], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-        pipeline_->BindPipeline(commandBuffer_[i]);
-        vkCmdDraw(commandBuffer_[i], 3, 1, 0, 0);
+    pipeline_->BindPipeline(commandBuffer_[imageIndex]);
+    vkModel_->Bind(commandBuffer_[imageIndex]);
+    vkModel_->Draw(commandBuffer_[imageIndex]);
 
-        vkCmdEndRenderPass(commandBuffer_[i]);
-        VK_CHECK(
-            vkEndCommandBuffer(commandBuffer_[i]),
-            "CommandBuffer: Failed to record command in buffers !!"
-        )
-    }
+    vkCmdEndRenderPass(commandBuffer_[imageIndex]);
+    VK_CHECK(
+        vkEndCommandBuffer(commandBuffer_[imageIndex]),
+        "CommandBuffer: Failed to record command in buffers !!"
+    )
 }
 
 void GraphicsHandler::DrawFrame()
 {
     uint32_t imageIndex;
-    VkResult result = swapChainInst_.AcquireNextImage(&imageIndex);
+    VkResult result = swapChainInst_->AcquireNextImage(&imageIndex);
+
+    if (result == VK_ERROR_OUT_OF_DATE_KHR)
+    {
+        RecreateSwapChain();
+        return;
+    }
+
     if ((result != VK_SUCCESS) && (result != VK_SUBOPTIMAL_KHR))
     {
         LOG_ERROR("Render: Failed to acquire next SwapChain image");
     }
 
-    VK_CHECK(
-        swapChainInst_.SubmitCommandBuffers(&commandBuffer_[imageIndex], &imageIndex),
-        "Render: Failed to present SwapChain iamge !!"
-    )
+    RecordCommandBuffer(imageIndex);
+    result = swapChainInst_->SubmitCommandBuffers(&commandBuffer_[imageIndex], &imageIndex);
+
+    if ((result == VK_ERROR_OUT_OF_DATE_KHR) || (result == VK_SUBOPTIMAL_KHR) || window_.WasWindowResized())
+    {
+        window_.ResetFrameBufferResized();
+        RecreateSwapChain();
+        return;
+    }
+    if (result != VK_SUCCESS)
+    {
+        LOG_WARN( "Render: Failed to present SwapChain iamge !!");
+    }
+}
+
+void GraphicsHandler::loadModels()
+{
+    std::vector<Vertex> vertices{
+        {{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+        {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
+        {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
+    };
+    // sierpinski(vertices, 3, {-0.5f, 0.5f}, {0.5f, 0.5f}, {0.0f, -0.5f});
+    vkModel_ = std::make_unique<VkModel>(&vkInstance_, vertices);
 }
 
 void GraphicsHandler::Cleanup()

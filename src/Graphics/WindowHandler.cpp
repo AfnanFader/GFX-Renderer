@@ -39,11 +39,14 @@ void WindowHandler::InitWindow()
         LOG_ERROR_EXIT("GLFW : Initialization Failed !");
     }
 
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE); // Temporary setting for non resizable window for now.
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE); // Temporary setting for non resizable window for now.
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API); // Setto not load OpenGL by default.
 
     window_ = glfwCreateWindow(width_, height_, "GFX-Renderer", nullptr, nullptr); // Starting with hardcoded 16:9
     monitorArr_ = glfwGetMonitors(&monitorCount_);
+
+    glfwSetWindowUserPointer(window_, this);
+    glfwSetFramebufferSizeCallback(window_, FrameBufferResizeCallback);
 
     if (window_ == nullptr || monitorArr_ == nullptr)
     {
@@ -74,6 +77,14 @@ VkExtent2D WindowHandler::GetWindowExtent()
         static_cast<uint32_t>(width_),
         static_cast<uint32_t>(height_)
     };
+}
+
+void WindowHandler::FrameBufferResizeCallback(GLFWwindow* window, int width, int height)
+{
+    auto pWin = reinterpret_cast<WindowHandler*>(glfwGetWindowUserPointer(window));
+    pWin->frameBufferResized_ = true;
+    pWin->width_ = width;
+    pWin->height_ = height;
 }
 
 } // namespace Graphic

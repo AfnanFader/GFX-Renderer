@@ -7,7 +7,5 @@ build/
 # MacOS Cache
 .DS_Store
 
-# Compile Shaders
+# Compiled Shaders
 Assets/Compiled_Shaders
-
-OLD/

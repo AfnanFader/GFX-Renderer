@@ -1,5 +1,6 @@
 #include <Graphics/Vulkan/VkPipelineImpl.ipp>
 #include <Graphics/Vulkan/VkUtil.ipp>
+#include <Graphics/VkModel.ipp>
 
 // STD Lib
 #include <fstream>
@@ -99,12 +100,14 @@ void GraphicPipeline::CreateGraphicsPipeline(const std::string& vertFilePath, co
     colorBlendInfo.blendConstants[2] = 0.0f;
     colorBlendInfo.blendConstants[3] = 0.0f;
 
+    auto bindingDesc = Vertex::GetBindingDescriptions();
+    auto attributeDesc = Vertex::GetAttributeDescriptions();
     VkPipelineVertexInputStateCreateInfo vertexInputInfo = {};
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-    vertexInputInfo.vertexAttributeDescriptionCount = 0;
-    vertexInputInfo.vertexBindingDescriptionCount = 0;
-    vertexInputInfo.pVertexAttributeDescriptions = nullptr;
-    vertexInputInfo.pVertexBindingDescriptions = nullptr;
+    vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDesc.size());
+    vertexInputInfo.vertexBindingDescriptionCount = static_cast<uint32_t>(bindingDesc.size());
+    vertexInputInfo.pVertexAttributeDescriptions = attributeDesc.data();
+    vertexInputInfo.pVertexBindingDescriptions = bindingDesc.data();
 
     VkPipelineViewportStateCreateInfo viewportInfo = {};
     viewportInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;

@@ -31,14 +31,20 @@ public:
 
     VkExtent2D GetWindowExtent();
 
+    bool WasWindowResized() { return frameBufferResized_; }
+    void ResetFrameBufferResized() { frameBufferResized_ = false; }
+
 private:
 
     void InitWindow();
+
+    static void FrameBufferResizeCallback(GLFWwindow* window, int width, int height);
 
 //----------------------------------------------------------------------------//
 
     int32_t width_;
     int32_t height_;
+    bool frameBufferResized_ = false;
 
     GLFWwindow* window_ = nullptr;
     GLFWmonitor** monitorArr_ = nullptr;
