@@ -4,8 +4,8 @@ project(GfxRenderer)
 
 if (WIN32)
     set(GLFW_LIB "${CMAKE_SOURCE_DIR}/lib/GLFW/lib-vc2022")
-elseif (APPLE) # Note that this support x86_64 and arm64 MAC
-    set(GLFW_LIB "${CMAKE_SOURCE_DIR}/lib/GLFW/lib-universal")
+elseif (APPLE) # Note that this support arm64 MAC only.
+    set(GLFW_LIB "${CMAKE_SOURCE_DIR}/lib/GLFW/lib-arm64")
 endif()
 
 # Find Vulkan
@@ -38,7 +38,9 @@ include_directories("${CMAKE_SOURCE_DIR}/include")
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /VERBOSE:LIB")
+if (WIN32)
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /VERBOSE:LIB")
+endif()
 
 add_executable(${PROJECT_NAME} ${SOURCES})
 

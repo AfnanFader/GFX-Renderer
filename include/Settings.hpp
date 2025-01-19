@@ -11,7 +11,7 @@
 #define MAX_FRAMES_IN_FLIGHT 2
 
 // Temp shader location <-- might use json for future proofing
-#define VERT_SHADER_PATH "/Assets/Compiled_Shaders/simple_vert_shader.spv"
-#define FRAG_SHADER_PATH "/Assets/Compiled_Shaders/simple_frag_shader.spv"
+#define VERT_SHADER_PATH "/Assets/Compiled_Shaders/simple_shader.vert.spv"
+#define FRAG_SHADER_PATH "/Assets/Compiled_Shaders/simple_shader.frag.spv"
 
 #endif
