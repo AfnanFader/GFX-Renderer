@@ -15,12 +15,9 @@ struct PipelineConfigInfo
 {
     VkViewport viewport;
     VkRect2D scissor;
-    VkPipelineViewportStateCreateInfo viewportInfo;
     VkPipelineInputAssemblyStateCreateInfo inputAssemblyInfo;
     VkPipelineRasterizationStateCreateInfo rasterizationInfo;
     VkPipelineMultisampleStateCreateInfo multisampleInfo;
-    VkPipelineColorBlendAttachmentState colorBlendAttachment;
-    VkPipelineColorBlendStateCreateInfo colorBlendInfo;
     VkPipelineDepthStencilStateCreateInfo depthStencilInfo;
     VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
     VkRenderPass renderPass = VK_NULL_HANDLE;
@@ -39,9 +36,11 @@ public:
     ~GraphicPipeline();
 
     GraphicPipeline(const GraphicPipeline&) = delete;
-    void operator=(const GraphicPipeline) = delete;
+    GraphicPipeline& operator=(const GraphicPipeline) = delete;
 
     static PipelineConfigInfo DefaultPipeLineConfigInfo(uint32_t width, uint32_t height);
+
+    void BindPipeline(VkCommandBuffer commandBuffer);
 
 private:
     std::vector<char> ReadFile(const std::string& filePath);
@@ -55,7 +54,7 @@ private:
 
 //----------------------------------------------------------------------------//
 
-    VkDevice device_ = nullptr;
+    VkDevice device_ = VK_NULL_HANDLE;
     VkPipeline renderPipeline_ = VK_NULL_HANDLE;
     VkShaderModule vertShaderModule_ = VK_NULL_HANDLE;
     VkShaderModule fragShaderModule_ = VK_NULL_HANDLE;

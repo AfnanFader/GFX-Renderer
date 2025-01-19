@@ -2,6 +2,9 @@
 #define GRAPHICS_VULKAN_VKSWAPCHAINIMPL_HPP
 #pragma once
 
+#include <Graphics/Vulkan/VkInstanceImpl.hpp>
+
+// External Libs
 #include <vulkan/vulkan.h>
 #include <Settings.hpp>
 
@@ -23,13 +26,26 @@ public:
     ~SwapChainInstance();
 
     SwapChainInstance(const SwapChainInstance&) = delete;
-    void operator=(const SwapChainInstance&) = delete;
+    SwapChainInstance operator=(const SwapChainInstance&) = delete;
 
     uint32_t GetWidth() { return swapChainExtent_.width; }
     uint32_t GetHeight() { return swapChainExtent_.height; }
     VkExtent2D GetSwapChainExtent() { return swapChainExtent_; }
 
-    // VkFormat GetSwapChainImageFormat() { return }
+    VkFormat GetSwapChainImageFormat() { return swapChainFormat_; }
+    size_t GetImageCount() { return swapChainImages_.size(); }
+
+    VkImageView GetImageView(int32_t index) {return swapChainImgViews_[index]; }
+    VkFramebuffer GetFrameBuffer(int32_t index) { return frameBuffer_[index]; }
+    VkRenderPass GetRenderPass() { return renderPass_; }
+
+    float ExtendAspectRatio() { 
+        return (static_cast<float>(swapChainExtent_.width)/static_cast<float>(swapChainExtent_.height));
+    }
+
+    VkFormat FindDepthFormat();
+    VkResult AcquireNextImage(uint32_t* imageIndex);
+    VkResult SubmitCommandBuffers(const VkCommandBuffer* buffers, uint32_t* imageIndex);
 
 private:
     void CreateSwapChain();
@@ -39,9 +55,9 @@ private:
     void CreateFrameBuffers();
     void CreateSyncObjects();
 
-    VkSurfaceFormatKHR chooseSwapSurfaceFormat();
-    VkPresentModeKHR chooseSwapPresentMode();
-    VkExtent2D choostSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
+    VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availFormats);
+    VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availPresentMode);
+    VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
 
 //----------------------------------------------------------------------------//
 
@@ -54,17 +70,17 @@ VkFormat swapChainFormat_;
 std::vector<VkFramebuffer> frameBuffer_;
 VkRenderPass renderPass_ = VK_NULL_HANDLE;
 
-std::vector<VkImage> depthImages;
-std::vector<VkDeviceMemory> depthImageMem;
-std::vector<VkImageView> depthImageViews;
-std::vector<VkImageView> swapChainImgViewss;
-std::vector<VkImage> swapChainImgs;
+std::vector<VkImage> depthImages_;
+std::vector<VkDeviceMemory> depthImgMem_;
+std::vector<VkImageView> depthImgViews_;
+std::vector<VkImageView> swapChainImgViews_;
+std::vector<VkImage> swapChainImages_;
 
 // SwapChain instance
 VkSwapchainKHR swapChainInst_ = VK_NULL_HANDLE;
 
 // Thread safety controls
-std::vector<VkSemaphore> imgAvailSempahores_;
+std::vector<VkSemaphore> imgAvailSemaphores_;
 std::vector<VkSemaphore> renderCompSemaphores_;
 std::vector<VkFence> inFlightFences_;
 std::vector<VkFence> imgInFlight_;

@@ -91,10 +91,49 @@ public:
     // Move operators - prevent creating multiple copies
     VkDeviceInstance(const VkDeviceInstance&) = delete;
     VkDeviceInstance(VkDeviceInstance&&) = delete;
-    VkDeviceInstance &operator=(VkDeviceInstance&&) = delete;
-    void operator=(const VkDeviceInstance&) = delete; 
+    VkDeviceInstance& operator=(VkDeviceInstance&&) = delete;
+    VkDeviceInstance& operator=(const VkDeviceInstance&) = delete; 
 
+    // @todo Might need to move these to ipp
+    VkPhysicalDevice GetPhyDevice() { return physicalDevice_; }
     VkDevice GetLogicalDevice() { return logicalDevice_; }
+    VkCommandPool GetCommandPool() { return commandPool_; }
+    VkSurfaceKHR GetSurface() { return surfaceKHR_; }
+    VkQueue GetGraphicsQ() { return graphicsQueue_; }
+    VkQueue GetPresentQ() { return presentQueue_; }
+
+    uint32_t FindMemoryType(uint32_t typeFiler, VkMemoryPropertyFlags properties);
+
+    VkFormat FindSupportedFormat(
+        const std::vector<VkFormat>& candidate,
+        VkImageTiling tiling,
+        VkFormatFeatureFlags features);
+
+    void CreateBuffer(
+        VkDeviceSize devSize,
+        VkBufferUsageFlags usage,
+        VkMemoryPropertyFlags properties,
+        VkBuffer& buffer,
+        VkDeviceMemory& bufferMem);
+    
+    VkCommandBuffer BeginSingleTimeCommands();
+    
+    void EndSingleTimeCommands(VkCommandBuffer cmdBuffer);
+
+    void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize devSize);
+
+    void CopyBufferToImage(
+        VkBuffer buffer,
+        VkImage image,
+        uint32_t width,
+        uint32_t height,
+        uint32_t layerCount);
+    
+    void CreateImageWithInfo(
+        const VkImageCreateInfo& imageInfo,
+        VkMemoryPropertyFlags properties,
+        VkImage& image,
+        VkDeviceMemory& imageMem);
 
 private:
     // Main Initializers
@@ -115,18 +154,9 @@ private:
     void PickPhysicalDevice();
     bool IsDeviceCompatible(VkPhysicalDevice device);
     std::vector<const char*> GetSupportedDeviceExtensions(VkPhysicalDevice device);
-    QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device);
-    SwapChainCapabilities GetSwapChainSupport(VkPhysicalDevice device);
     
     // Bind Physical Device into a logical abstract
     void CreateLogicalDeviceAndQueue();
-
-    // Implement swapchain, this handles frame output to the window context
-    void CreateSwapChain();
-    VkPresentModeKHR PickSwapPresentMode(std::vector<VkPresentModeKHR> presentModes);
-    VkSurfaceFormatKHR PickSwapSurfaceFormat(std::vector<VkSurfaceFormatKHR> formats);
-    VkExtent2D PickSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
-    uint32_t PickSwapImageCount(const VkSurfaceCapabilitiesKHR& capabilities);
 
     // Command Pool creation
     void CreateCommandPool();

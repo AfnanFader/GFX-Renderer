@@ -3,6 +3,12 @@
 
 #include <Graphics/Vulkan/VkInstanceImpl.hpp>
 #include <Graphics/Vulkan/VkPipelineImpl.hpp>
+#include <Graphics/Vulkan/VkSwapChainImpl.hpp>
+#include <Settings.hpp>
+
+// STD Lib
+#include <memory>
+#include <vector>
 
 namespace Graphic
 {
@@ -15,19 +21,29 @@ public:
     GraphicsHandler();
     ~GraphicsHandler();
 
+    GraphicsHandler(const GraphicsHandler&) = delete;
+    GraphicsHandler &operator=(const GraphicsHandler&) = delete;
+
     void RenderLoop();
 
 private:
 
+    void CreatePipelineLayout();
+
+    void CreatePipeline();
+
+    void CreateCommandBuffer();
+
+    void DrawFrame();
+
     void Cleanup();
 
-    WindowHandler window_{};
+    WindowHandler window_{DISPLAY_WIDTH,DISPLAY_HEIGHT};
     VkDeviceInstance vkInstance_{&window_};
-    GraphicPipeline pipe_{
-        &vkInstance_,
-        VERT_SHADER_PATH,
-        FRAG_SHADER_PATH,
-        GraphicPipeline::DefaultPipeLineConfigInfo(DISPLAY_WIDTH, DISPLAY_HEIGHT)};
+    SwapChainInstance swapChainInst_{&vkInstance_, window_.GetWindowExtent()};
+    std::unique_ptr<GraphicPipeline> pipeline_;
+    VkPipelineLayout pipelineLayout_ = VK_NULL_HANDLE;
+    std::vector<VkCommandBuffer> commandBuffer_;
 };
 
 } // namespace Graphic

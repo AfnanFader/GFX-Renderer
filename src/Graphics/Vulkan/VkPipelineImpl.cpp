@@ -1,4 +1,5 @@
 #include <Graphics/Vulkan/VkPipelineImpl.ipp>
+#include <Graphics/Vulkan/VkUtil.ipp>
 
 // STD Lib
 #include <fstream>
@@ -13,9 +14,8 @@ GraphicPipeline::GraphicPipeline(
     VkDeviceInstance* instance,
     const std::string& vertFilePath,
     const std::string& fragFilePath,
-    const PipelineConfigInfo& configInfo)
+    const PipelineConfigInfo& configInfo) : device_(instance->GetLogicalDevice())
 {
-    device_ = instance->GetLogicalDevice();
     // Note : PROJECT_DIRECTORY macro is added by CMakeList.txt
     auto const vertPath = (std::string)PROJECT_DIRECTORY + vertFilePath;
     auto const fragPath = (std::string)PROJECT_DIRECTORY + fragFilePath; 
@@ -74,6 +74,31 @@ void GraphicPipeline::CreateGraphicsPipeline(const std::string& vertFilePath, co
     shaderStages[1].pNext = nullptr;
     shaderStages[1].pSpecializationInfo = nullptr;
 
+    VkPipelineColorBlendAttachmentState colorBlendAttachment = {};
+    colorBlendAttachment.colorWriteMask = (
+        VK_COLOR_COMPONENT_R_BIT | 
+        VK_COLOR_COMPONENT_G_BIT | 
+        VK_COLOR_COMPONENT_B_BIT | 
+        VK_COLOR_COMPONENT_A_BIT);
+    colorBlendAttachment.blendEnable = VK_FALSE;
+    colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+    colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+    colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
+    colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+    colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+    colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
+
+    VkPipelineColorBlendStateCreateInfo colorBlendInfo = {};
+    colorBlendInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+    colorBlendInfo.logicOpEnable = VK_FALSE;
+    colorBlendInfo.logicOp = VK_LOGIC_OP_COPY;
+    colorBlendInfo.attachmentCount = 1;
+    colorBlendInfo.pAttachments = &colorBlendAttachment;
+    colorBlendInfo.blendConstants[0] = 0.0f;
+    colorBlendInfo.blendConstants[1] = 0.0f;
+    colorBlendInfo.blendConstants[2] = 0.0f;
+    colorBlendInfo.blendConstants[3] = 0.0f;
+
     VkPipelineVertexInputStateCreateInfo vertexInputInfo = {};
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
     vertexInputInfo.vertexAttributeDescriptionCount = 0;
@@ -81,16 +106,23 @@ void GraphicPipeline::CreateGraphicsPipeline(const std::string& vertFilePath, co
     vertexInputInfo.pVertexAttributeDescriptions = nullptr;
     vertexInputInfo.pVertexBindingDescriptions = nullptr;
 
+    VkPipelineViewportStateCreateInfo viewportInfo = {};
+    viewportInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+    viewportInfo.viewportCount = 1;
+    viewportInfo.pViewports = &configInfo.viewport;
+    viewportInfo.scissorCount = 1;
+    viewportInfo.pScissors = &configInfo.scissor;
+
     VkGraphicsPipelineCreateInfo pipelineInfo = {};
     pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
     pipelineInfo.stageCount = 2;
     pipelineInfo.pStages = shaderStages;
     pipelineInfo.pVertexInputState = &vertexInputInfo;
     pipelineInfo.pInputAssemblyState = &configInfo.inputAssemblyInfo;
-    pipelineInfo.pViewportState = &configInfo.viewportInfo;
+    pipelineInfo.pViewportState = &viewportInfo;
     pipelineInfo.pRasterizationState = &configInfo.rasterizationInfo;
     pipelineInfo.pMultisampleState = &configInfo.multisampleInfo;
-    pipelineInfo.pColorBlendState = &configInfo.colorBlendInfo;
+    pipelineInfo.pColorBlendState = &colorBlendInfo;
     pipelineInfo.pDepthStencilState = &configInfo.depthStencilInfo;
     pipelineInfo.pDynamicState = nullptr;
 
@@ -101,11 +133,10 @@ void GraphicPipeline::CreateGraphicsPipeline(const std::string& vertFilePath, co
     pipelineInfo.basePipelineIndex = -1;
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
-    // if (vkCreateGraphicsPipelines(device_, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &renderPipeline_) != VK_SUCCESS)
-    // {
-    //     LOG_WARN("Pipeline: Unable to create Graphics Pipeline");
-    // }
-
+    VK_CHECK(
+        vkCreateGraphicsPipelines(device_, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &renderPipeline_),
+        "Pipeline: Unable to create Graphics Pipeline"
+    )
 }
 
 void GraphicPipeline::CreateShaderModule(const std::vector<char>& code, VkShaderModule* shaderModule)
@@ -115,10 +146,11 @@ void GraphicPipeline::CreateShaderModule(const std::vector<char>& code, VkShader
     createInfo.codeSize = code.size();
     createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
 
-    if (vkCreateShaderModule(device_, &createInfo, nullptr, shaderModule) != VK_SUCCESS)
-    {
-        LOG_ERROR("Pipeline: Failed to create shader module");
-    }
+    VK_CHECK(
+        vkCreateShaderModule(device_, &createInfo, nullptr, shaderModule),
+        "Pipeline: Failed to create shader module"
+    )
+    
 }
 
 PipelineConfigInfo GraphicPipeline::DefaultPipeLineConfigInfo(uint32_t width, uint32_t height)
@@ -134,18 +166,12 @@ PipelineConfigInfo GraphicPipeline::DefaultPipeLineConfigInfo(uint32_t width, ui
     configInfo.viewport.y = 0.0f;
     configInfo.viewport.width = static_cast<float>(width);
     configInfo.viewport.height = static_cast<float>(height);
-    configInfo.viewport.maxDepth = 1.0f;
     configInfo.viewport.minDepth = 0.0f;
+    configInfo.viewport.maxDepth = 1.0f;
 
     configInfo.scissor.offset = {0,0};
     configInfo.scissor.extent = {width, height};
 
-    configInfo.viewportInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-    configInfo.viewportInfo.viewportCount = 1;
-    configInfo.viewportInfo.pViewports = &configInfo.viewport;
-    configInfo.viewportInfo.scissorCount = 1;
-    configInfo.viewportInfo.pScissors = &configInfo.scissor;
-    
     configInfo.rasterizationInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
     configInfo.rasterizationInfo.depthClampEnable = VK_FALSE;
     configInfo.rasterizationInfo.rasterizerDiscardEnable = VK_FALSE;
@@ -166,30 +192,6 @@ PipelineConfigInfo GraphicPipeline::DefaultPipeLineConfigInfo(uint32_t width, ui
     configInfo.multisampleInfo.alphaToCoverageEnable = VK_FALSE;
     configInfo.multisampleInfo.alphaToOneEnable = VK_FALSE;
 
-    configInfo.colorBlendAttachment.colorWriteMask = (
-        VK_COLOR_COMPONENT_R_BIT | 
-        VK_COLOR_COMPONENT_G_BIT | 
-        VK_COLOR_COMPONENT_B_BIT | 
-        VK_COLOR_COMPONENT_A_BIT);
-    configInfo.colorBlendAttachment.blendEnable = VK_FALSE;
-    configInfo.colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
-    configInfo.colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
-    configInfo.colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
-    configInfo.colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-    configInfo.colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-    configInfo.colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
-
-    configInfo.colorBlendInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-    configInfo.colorBlendInfo.logicOpEnable = VK_FALSE;
-    configInfo.colorBlendInfo.logicOp = VK_LOGIC_OP_COPY;
-    configInfo.colorBlendInfo.attachmentCount = 1;
-    configInfo.colorBlendInfo.pAttachments = &configInfo.colorBlendAttachment;
-    configInfo.colorBlendInfo.blendConstants[0] = 0.0f;
-    configInfo.colorBlendInfo.blendConstants[1] = 0.0f;
-    configInfo.colorBlendInfo.blendConstants[2] = 0.0f;
-    configInfo.colorBlendInfo.blendConstants[3] = 0.0f;
-    configInfo.colorBlendInfo.blendConstants[4] = 0.0f;
-
     configInfo.depthStencilInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
     configInfo.depthStencilInfo.depthTestEnable = VK_TRUE;
     configInfo.depthStencilInfo.depthWriteEnable = VK_TRUE;
@@ -202,6 +204,11 @@ PipelineConfigInfo GraphicPipeline::DefaultPipeLineConfigInfo(uint32_t width, ui
     configInfo.depthStencilInfo.back = {};
 
     return configInfo;
+}
+
+void GraphicPipeline::BindPipeline(VkCommandBuffer commandBuffer)
+{
+    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderPipeline_);
 }
 
 } // namespace Graphic
