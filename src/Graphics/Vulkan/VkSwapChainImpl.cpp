@@ -127,7 +127,7 @@ void SwapChainInstance::CreateSwapChain()
     swapChainImages_.resize(imageCount);
     vkGetSwapchainImagesKHR(instance_->GetLogicalDevice(), swapChainInst_, &imageCount, swapChainImages_.data());
 
-    swapChainFormat_ = surfaceFormat.format;
+    swapChainImageFormat_ = surfaceFormat.format;
     swapChainExtent_ = extent;
 }
 
@@ -140,7 +140,7 @@ void SwapChainInstance::CreateImageView()
         viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
         viewInfo.image = swapChainImages_[i];
         viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-        viewInfo.format = swapChainFormat_;
+        viewInfo.format = swapChainImageFormat_;
         viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         viewInfo.subresourceRange.baseMipLevel = 0;
         viewInfo.subresourceRange.levelCount = 1;
@@ -156,7 +156,7 @@ void SwapChainInstance::CreateImageView()
 
 void SwapChainInstance::CreateDepthResources()
 {
-    VkFormat depthFormat = FindDepthFormat();
+    swapChainDepthFormat_ = FindDepthFormat();
     VkExtent2D swapChainExtent = GetSwapChainExtent();
 
     depthImages_.resize(GetImageCount());
@@ -173,7 +173,7 @@ void SwapChainInstance::CreateDepthResources()
         imageInfo.extent.depth = 1;
         imageInfo.mipLevels = 1;
         imageInfo.arrayLayers = 1;
-        imageInfo.format = depthFormat;
+        imageInfo.format = swapChainDepthFormat_;
         imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
         imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
         imageInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
@@ -191,7 +191,7 @@ void SwapChainInstance::CreateDepthResources()
         viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
         viewInfo.image = depthImages_[i];
         viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-        viewInfo.format = depthFormat;
+        viewInfo.format = swapChainDepthFormat_;
         viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
         viewInfo.subresourceRange.baseMipLevel = 0;
         viewInfo.subresourceRange.levelCount = 1;
@@ -396,14 +396,14 @@ VkPresentModeKHR SwapChainInstance::ChooseSwapPresentMode(
     const std::vector<VkPresentModeKHR>& availPresentMode)
 {
     // More selecetive options in the future - Vsync off/on
-    for (auto modes : availPresentMode)
-    {
-        if (modes == VK_PRESENT_MODE_MAILBOX_KHR)
-        {
-            LOG_INFO("Present Mode -> Mailbox");
-            return modes;
-        }
-    }
+    // for (auto modes : availPresentMode)
+    // {
+    //     if (modes == VK_PRESENT_MODE_MAILBOX_KHR)
+    //     {
+    //         LOG_INFO("Present Mode -> Mailbox");
+    //         return modes;
+    //     }
+    // }
     
     LOG_INFO("Present Mode -> V-Sync");
     return VK_PRESENT_MODE_FIFO_KHR;

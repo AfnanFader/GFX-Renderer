@@ -6,7 +6,13 @@
 
 namespace Graphic
 {
-    
+
+inline bool SwapChainInstance::CompareSwapFormats(VkFormat imageFormat, VkFormat depthFormat) const
+{
+    return ((imageFormat == swapChainImageFormat_) &&
+           (depthFormat == swapChainDepthFormat_));
+}
+
 } // namespace Graphic
 
 #endif

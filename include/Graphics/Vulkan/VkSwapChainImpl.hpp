@@ -32,16 +32,20 @@ public:
     uint32_t GetHeight() { return swapChainExtent_.height; }
     VkExtent2D GetSwapChainExtent() { return swapChainExtent_; }
 
-    VkFormat GetSwapChainImageFormat() { return swapChainFormat_; }
+    VkFormat GetSwapChainImageFormat() { return swapChainImageFormat_; }
+    VkFormat GetSwapChainDepthFormat() { return swapChainDepthFormat_; }
     size_t GetImageCount() { return swapChainImages_.size(); }
 
     VkImageView GetImageView(int32_t index) {return swapChainImgViews_[index]; }
     VkFramebuffer GetFrameBuffer(int32_t index) { return frameBuffer_[index]; }
-    VkRenderPass GetRenderPass() { return renderPass_; }
+    VkRenderPass GetRenderPass() const { return renderPass_; }
 
     float ExtendAspectRatio() { 
         return (static_cast<float>(swapChainExtent_.width)/static_cast<float>(swapChainExtent_.height));
     }
+
+    // To check compatibility !!!
+    bool CompareSwapFormats(VkFormat imageFormat, VkFormat depthFormat) const;
 
     VkFormat FindDepthFormat();
     VkResult AcquireNextImage(uint32_t* imageIndex);
@@ -65,7 +69,8 @@ VkDeviceInstance* instance_; // Vulkan instance
 VkExtent2D windowExtent_; // X * Y -> window measurements
 
 VkExtent2D swapChainExtent_;
-VkFormat swapChainFormat_;
+VkFormat swapChainImageFormat_;
+VkFormat swapChainDepthFormat_;
 
 std::vector<VkFramebuffer> frameBuffer_;
 VkRenderPass renderPass_ = VK_NULL_HANDLE;

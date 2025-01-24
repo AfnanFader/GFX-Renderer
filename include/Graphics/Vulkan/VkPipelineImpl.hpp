@@ -13,12 +13,15 @@ namespace Graphic
 
 struct PipelineConfigInfo
 {
-    VkViewport viewport;
-    VkRect2D scissor;
+    VkPipelineViewportStateCreateInfo viewportInfo;
     VkPipelineInputAssemblyStateCreateInfo inputAssemblyInfo;
     VkPipelineRasterizationStateCreateInfo rasterizationInfo;
     VkPipelineMultisampleStateCreateInfo multisampleInfo;
     VkPipelineDepthStencilStateCreateInfo depthStencilInfo;
+    VkPipelineColorBlendAttachmentState colorBlendAttachment;
+    VkPipelineColorBlendStateCreateInfo colorBlendInfo;
+    std::vector<VkDynamicState> dynamicStateEnable;
+    VkPipelineDynamicStateCreateInfo dynamicStateInfo;
     VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
     VkRenderPass renderPass = VK_NULL_HANDLE;
     uint32_t subpass = 0;
@@ -38,7 +41,7 @@ public:
     GraphicPipeline(const GraphicPipeline&) = delete;
     GraphicPipeline& operator=(const GraphicPipeline) = delete;
 
-    static PipelineConfigInfo DefaultPipeLineConfigInfo(uint32_t width, uint32_t height);
+    static void DefaultPipelineConfigInfo(PipelineConfigInfo& configInfo);
 
     void BindPipeline(VkCommandBuffer commandBuffer);
 
